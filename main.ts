@@ -9,10 +9,11 @@ import Anthropic from "@anthropic-ai/sdk";
 const cache = new Cache();
 const MODEL = "claude-3-5-sonnet-20241022";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+let systemError;
 
 if (ANTHROPIC_API_KEY == undefined) {
   console.error("Please set the ANTHROPIC_API_KEY environment variable");
-  Deno.exit(1);
+  systemError = "Please set the ANTHROPIC_API_KEY environment variable";
 }
 
 console.log(ANTHROPIC_API_KEY);
@@ -83,6 +84,10 @@ async function generateSiteContent(
 await init();
 
 Deno.serve(async (req: Request) => {
+  if (systemError) {
+    return new Response(systemError, { status: 500 });
+  }
+
   const url = new URL(req.url);
   const hostname = url.hostname;
 
