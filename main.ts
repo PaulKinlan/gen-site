@@ -1,24 +1,4 @@
-import { Site, RequestContext, SupportedContentType } from "./types.ts";
-import { db } from "./db.ts";
-import { auth } from "./auth.ts";
-import { Cache } from "./cache.ts";
-import { getContentType } from "./utils/contentType.ts";
-import { getSiteFromHostname } from "./utils/hostname.ts";
-import Anthropic from "@anthropic-ai/sdk";
-
-const cache = new Cache();
-const MODEL = "claude-3-5-sonnet-20241022";
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-let systemError;
-
-if (ANTHROPIC_API_KEY == undefined) {
-  console.error("Please set the ANTHROPIC_API_KEY environment variable");
-  systemError = "Please set the ANTHROPIC_API_KEY environment variable";
-}
-
-console.log(ANTHROPIC_API_KEY);
-
-const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+import { Route } from "./types.ts";
 
 async function init() {
   const kv = await Deno.openKv();
@@ -31,100 +11,67 @@ async function init() {
   });
 }
 
-function extractContentFromMarkdown(
-  text: string,
-  contentType: SupportedContentType
-): string {
-  const codeBlockRegex = new RegExp(
-    `\`\`\`${contentType}\\s*\\n([\\s\\S]*?)\\n\`\`\``,
-    "i"
-  );
-  const match = text.match(codeBlockRegex);
-
-  if (!match) {
-    console.log("\n=== Claude Response Analysis ===");
-    console.log("Failed to find code block in response");
-    console.log("Content Type:", contentType);
-    console.log("Full Response:", text);
-    throw new Error(`No ${contentType} code block found in the response`);
-  }
-
-  return match[1].trim();
-}
-
-// Site generation helper
-async function generateSiteContent(
-  path: string,
-  site: Site,
-  context: RequestContext,
-  contentType: SupportedContentType
-): Promise<string> {
-  const basePrompt = `You are an AI content generator that creates web content for the following site:\n\n${site.prompt}`;
-
-  const contextPrompt =
-    context.previousRequests.length > 0
-      ? `\n\nContext from previous requests:\n${context.previousRequests
-          .map((req) => `<file name="${req.path}">\n${req.content}\n</file>`)
-          .join("\n\n")}`
-      : "";
-
-  const prompt = `${basePrompt}${contextPrompt}\n\nGenerate ${contentType.toUpperCase()} content for the path "${path}".`;
-
-  // TODO: think about system / user roles.
-  const message = await anthropic.messages.create({
-    max_tokens: 8192,
-    messages: [{ role: "user", content: prompt }],
-    model: MODEL,
-  });
-
-  // TODO: Implement Claude/AI integration
-  return extractContentFromMarkdown(message.content[0].text, contentType);
-}
+const routes: Route[] = [
+  {
+    pattern: new URLPattern({
+      hostname: "localhost",
+      pathname: "/signup",
+    }),
+    handler: (await import("./routes/main/signup.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "makemy.blog",
+      pathname: "/signup",
+    }),
+    handler: (await import("./routes/main/signup.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "makemy.blog",
+      pathname: "/signin",
+    }),
+    handler: (await import("./routes/main/signin.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "localhost",
+      pathname: "/signin",
+    }),
+    handler: (await import("./routes/main/signin.ts")).default,
+  },
+  {
+    pattern: new URLPattern({ hostname: "localhost" }),
+    handler: (await import("./routes/main/index.ts")).default,
+  },
+  {
+    pattern: new URLPattern({ hostname: "makemy.blog" }),
+    handler: (await import("./routes/main/index.ts")).default,
+  },
+  {
+    pattern: new URLPattern({ hostname: "(.+).makemy.blog" }),
+    handler: (await import("./routes/subdomain/index.ts")).default,
+  },
+];
 
 await init();
 
 Deno.serve(async (req: Request) => {
-  if (systemError) {
-    return new Response(systemError, { status: 500 });
-  }
-
   const url = new URL(req.url);
   const hostname = url.hostname;
 
-  if (hostname === "makemy.blog") {
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.split(" ")[1];
-      const userId = await auth.verifyToken(token);
-      if (userId) {
-        // Handle authenticated admin requests
-        return new Response("Admin UI");
-      }
+  try {
+    const matchingRoute = routes.find((route) => route.pattern.test(url));
+
+    console.log("Request for", url.toString(), "matched", matchingRoute);
+
+    if (matchingRoute === undefined) {
+      // No matching route. What do we do about static files
+      return new Response("Not Found", { status: 404 });
     }
-    return new Response("Unauthorized", { status: 401 });
+
+    return matchingRoute.handler[req.method.toLowerCase()](req);
+  } catch (e) {
+    return new Response(e.message, { status: 500 });
   }
-
-  const subdomain = getSiteFromHostname(hostname);
-  const path = url.pathname;
-  const cacheKey = `${subdomain}:${path}`;
-
-  const cached = cache.get(cacheKey);
-  if (cached) return new Response(cached);
-
-  const site = await db.getSite(subdomain);
-  if (!site) return new Response("Site not found", { status: 404 });
-
-  const contentType: SupportedContentType = getContentType(path);
-
-  const content = await generateSiteContent(
-    path,
-    site,
-    { previousRequests: [] },
-    contentType
-  );
-  cache.set(cacheKey, content);
-
-  return new Response(content, {
-    headers: { "Content-Type": `text/${contentType}` },
-  });
 });
