@@ -1,4 +1,8 @@
+import { auth } from "../../auth.ts";
+import { db } from "../../db.ts";
+import { User } from "../../types.ts";
 import { BaseHandler } from "../base.ts";
+import { getCookies, setCookie } from "@std/http/cookie";
 
 const getTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -31,7 +35,7 @@ const getTemplate = `<!DOCTYPE html>
 
         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
             <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                <form id="signup-form" class="space-y-6">
+                <form id="signup-form" class="space-y-6" enctype="multipart/form-data" method="post">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700">
                             Username
@@ -111,5 +115,64 @@ export default new (class extends BaseHandler {
       status: 200,
       headers: { "Content-Type": "text/html" },
     });
+  }
+  async post(req: Request): Promise<Response> {
+    const url = new URL(req.url);
+    url.pathname = "/admin";
+    const adminUrl = url.toString();
+    try {
+      const data = await req.formData();
+
+      const requiredFields = ["username", "email", "password"];
+      for (const field of requiredFields) {
+        if (!data.has(field)) {
+          throw new Error(`Missing required field: ${field}`);
+        }
+      }
+
+      const user: User = {
+        id: crypto.randomUUID(),
+        username: (data.get("username") as string) || "",
+        email: (data.get("email") as string) || "",
+        passwordHash: await auth.hashPassword(data.get("password") as string),
+        createdAt: new Date(),
+      };
+
+      await db.createUser(user);
+      const token = await auth.createToken(user.id);
+
+      const response = new Response(null, {
+        status: 301,
+        headers: {
+          Location: adminUrl,
+        },
+      });
+
+      // Sign the user in by setting the token in a cookie
+      setCookie(response.headers, {
+        name: "auth",
+        value: token,
+        path: "/",
+        httpOnly: true,
+        SameSite: "Strict",
+      });
+
+      const sessionId = crypto.randomUUID();
+      await db.setSession(user.id, sessionId);
+
+      setCookie(response.headers, {
+        name: "session",
+        value: sessionId,
+        path: "/",
+        httpOnly: true,
+        SameSite: "Strict",
+      });
+
+      return response;
+    } catch (error) {
+      return new Response(error.message, {
+        status: 400,
+      });
+    }
   }
 })();

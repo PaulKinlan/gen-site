@@ -41,6 +41,27 @@ const routes: Route[] = [
     handler: (await import("./routes/main/signin.ts")).default,
   },
   {
+    pattern: new URLPattern({
+      hostname: "localhost",
+      pathname: "/admin",
+    }),
+    handler: (await import("./routes/main/admin.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "makemy.blog",
+      pathname: "/admin",
+    }),
+    handler: (await import("./routes/main/admin.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "localhost",
+      pathname: "/api/generate-name",
+    }),
+    handler: (await import("./routes/main/api/generate-name.ts")).default,
+  },
+  {
     pattern: new URLPattern({ hostname: "localhost" }),
     handler: (await import("./routes/main/index.ts")).default,
   },
@@ -58,12 +79,9 @@ await init();
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
-  const hostname = url.hostname;
 
   try {
     const matchingRoute = routes.find((route) => route.pattern.test(url));
-
-    console.log("Request for", url.toString(), "matched", matchingRoute);
 
     if (matchingRoute === undefined) {
       // No matching route. What do we do about static files

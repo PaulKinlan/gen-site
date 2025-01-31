@@ -3,9 +3,17 @@ import { Site, User } from "./types.ts";
 const kv = await Deno.openKv();
 
 export const db = {
-  async getUser(email: string): Promise<User | null> {
-    const result = await kv.get(["users", email]);
-    return result.value as User | null;
+  async setSession(userId: string, sessionId: string): Promise<void> {
+    await kv.set(["sessions", sessionId], userId, {
+      expireIn: 1000 * 60 * 60 * 24, // 24 hours timeout
+    });
+
+    return;
+  },
+
+  async getSession(sessionId: string): Promise<string | null> {
+    const result = await kv.get(["sessions", sessionId]);
+    return result.value as string | null;
   },
 
   async getSite(subdomain: string): Promise<Site | null> {
@@ -35,6 +43,18 @@ export const db = {
       .set(["emails", user.email], user.id);
 
     await atomic.commit();
+  },
+
+  async getUserById(id: string): Promise<User | null> {
+    const result = await kv.get(["users", id]);
+    return result.value as User | null;
+  },
+
+  async getUserByUsername(username: string): Promise<User | null> {
+    const userId = await kv.get(["usernames", username]);
+    if (!userId.value) return null;
+    const user = await kv.get(["users", userId.value]);
+    return user.value as User;
   },
 
   async getUserByEmail(email: string): Promise<User | null> {

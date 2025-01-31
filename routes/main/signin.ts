@@ -1,4 +1,8 @@
+import { auth } from "../../auth.ts";
+import { db } from "../../db.ts";
 import { BaseHandler } from "../base.ts";
+import { setCookie } from "@std/http/cookie";
+import path from "npm:path";
 
 const getTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -31,7 +35,7 @@ const getTemplate = `<!DOCTYPE html>
 
         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
             <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                <form id="signin-form" class="space-y-6">
+                <form id="signin-form" class="space-y-6" method="post" enctype="multipart/form-data">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700">
                             Username
@@ -80,5 +84,57 @@ export default new (class extends BaseHandler {
       status: 200,
       headers: { "Content-Type": "text/html" },
     });
+  }
+  async post(req: Request): Promise<Response> {
+    const url = new URL(req.url);
+    url.pathname = "/admin";
+    const adminUrl = url.toString();
+    // Check to see if the credentials are correct.
+    const formData = await req.formData();
+    console.log(formData);
+    const username = formData.get("username");
+    const password = formData.get("password");
+
+    console.log(username);
+
+    const user = await db.getUserByUsername(username as string);
+    const submittedPasswordHash = await auth.hashPassword(password as string);
+
+    console.log(user);
+
+    if (user?.passwordHash != submittedPasswordHash) {
+      return new Response("Invalid credentials", { status: 401 });
+    }
+
+    const token = await auth.createToken(user.id);
+
+    const response = new Response(null, {
+      status: 301,
+      headers: {
+        Location: adminUrl,
+      },
+    });
+
+    // Set the auth cookie.
+    setCookie(response.headers, {
+      name: "auth",
+      value: token,
+      path: "/",
+      httpOnly: true,
+      SameSite: "Strict",
+    });
+
+    const sessionId = crypto.randomUUID();
+    await db.setSession(user.id, sessionId);
+
+    setCookie(response.headers, {
+      name: "session",
+      value: sessionId,
+      path: "/",
+      httpOnly: true,
+      SameSite: "Strict",
+    });
+
+    return response;
   }
 })();
