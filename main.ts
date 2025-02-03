@@ -43,6 +43,13 @@ const routes: Route[] = [
   {
     pattern: new URLPattern({
       hostname: "localhost",
+      pathname: "/admin/edit",
+    }),
+    handler: (await import("./routes/main/admin/edit.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "localhost",
       pathname: "/admin",
     }),
     handler: (await import("./routes/main/admin.ts")).default,

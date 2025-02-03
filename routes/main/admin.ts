@@ -69,42 +69,24 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
                     </div>
                 </form>
 
+                <br>
+                <hr>
+                <br>
+
                 <h2 class="text-2xl font-bold mb-6">Your Sites</h2>
 
                 ${sites
                   .map(
                     (site) => `
-                    <form>
+                   
                       <div>
-                        <label class="block text-sm font-medium text-gray-700">
-                            Site Prompt
-                        </label>
                         <div class="mt-1">
-                          <p>Preview: <a href="https://${
-                            site.subdomain
-                          }.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${
-                      site.subdomain
-                    }.itsmy.blog</a></p>
+                          <div class="flex justify-between items-center">
+                            <p>Preview: <a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
+                            <a href="/admin/edit?subdomain=${site.subdomain}" class="text-blue-600 hover:text-blue-800">Edit</a>
+                          </div>
                         </div>
-                        <div class="mt-1">
-                            <textarea id="prompt" name="prompt" rows="4" required 
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                            focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="Describe how your site should be generated...">${escapeHtml(
-                              site.prompt
-                            )}</textarea>
-                        </div>
-                        <div>
-                        <button type="submit"
-                            class="w-full flex justify-center py-2 px-4 border border-transparent 
-                            rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 
-                            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
-                            focus:ring-blue-500">
-                            Update
-                        </button>
-                    </div>
-                    </div>
-                    </form>`
+                        </div>`
                   )
                   .join("")}
             </div>
@@ -124,7 +106,7 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
 export default new (class extends BaseHandler {
   @authenticated({ redirect: "/login" })
   async get(req: Request): Promise<Response> {
-    const sites = await db.getSites(req.extraInformation.userId);
+    const sites = await db.getSites(req.extraInformation?.userId || "");
 
     return new Response(template(sites), {
       headers: { "Content-Type": "text/html" },
@@ -136,13 +118,17 @@ export default new (class extends BaseHandler {
     // Get the auth cookie.
     try {
       const data = await req.formData();
-      const subdomain = data.get("subdomain");
-      const prompt = data.get("prompt");
+      const subdomain = data.get("subdomain")?.toString();
+      const prompt = data.get("prompt")?.toString();
+
+      if (!subdomain || !prompt) {
+        throw new Error("Missing required fields");
+      }
 
       const site: Site = {
         subdomain,
         prompt,
-        userId: req.extraInformation.userId, // Assuming auth middleware sets this
+        userId: req.extraInformation?.userId || "", // Assuming auth middleware sets this
       };
 
       await db.createSite(site);

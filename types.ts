@@ -1,9 +1,31 @@
-export interface RequestHandler {
-  get(req: Request): Promise<Response>;
-  post(req: Request): Promise<Response>;
-  put(req: Request): Promise<Response>;
-  delete(req: Request): Promise<Response>;
-  patch(req: Request): Promise<Response>;
+export interface Site {
+  subdomain: string;
+  prompt: string;
+  userId: string;
+}
+
+declare global {
+  // Add URLPattern types for TypeScript
+  interface URLPatternInit {
+    protocol?: string;
+    username?: string;
+    password?: string;
+    hostname?: string;
+    port?: string;
+    pathname?: string;
+    search?: string;
+    hash?: string;
+    baseURL?: string;
+  }
+
+  interface URLPattern {
+    test: (input: string | URL) => boolean;
+  }
+
+  var URLPattern: {
+    prototype: URLPattern;
+    new (init?: URLPatternInit): URLPattern;
+  };
 }
 
 export interface User {
@@ -14,21 +36,14 @@ export interface User {
   createdAt: Date;
 }
 
-export interface SignupRequest {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface Site {
-  subdomain: string;
-  prompt: string;
-  userId: string;
+export interface Route {
+  pattern: URLPattern;
+  handler: {
+    get(req: Request): Promise<Response>;
+    post?(req: Request): Promise<Response>;
+    put?(req: Request): Promise<Response>;
+    delete?(req: Request): Promise<Response>;
+  };
 }
 
 export interface RequestContext {
@@ -38,9 +53,19 @@ export interface RequestContext {
   }[];
 }
 
-export type Route = {
-  pattern: URLPattern;
-  handler: RequestHandler;
-};
+export type SupportedContentType =
+  | "html"
+  | "css"
+  | "js"
+  | "media"
+  | "javascript";
 
-export type SupportedContentType = "html" | "css" | "js" | "media";
+declare global {
+  // Keep URLPattern declaration at top level
+  interface Request {
+    extraInformation?: {
+      userId: string;
+      session: string;
+    };
+  }
+}
