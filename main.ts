@@ -62,6 +62,13 @@ const routes: Route[] = [
     handler: (await import("./routes/main/api/generate-name.ts")).default,
   },
   {
+    pattern: new URLPattern({
+      hostname: "makemy.blog",
+      pathname: "/api/generate-name",
+    }),
+    handler: (await import("./routes/main/api/generate-name.ts")).default,
+  },
+  {
     pattern: new URLPattern({ hostname: "localhost" }),
     handler: (await import("./routes/main/index.ts")).default,
   },
