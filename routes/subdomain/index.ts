@@ -78,11 +78,13 @@ export default new (class extends BaseHandler {
     const cacheKey = `${subdomain}:${path}`;
     const contentType: SupportedContentType = getContentType(path);
 
+    console.log("Subdomain:", subdomain);
+
     if (subdomain == undefined) {
       return new Response("Subdomain not found", { status: 404 });
     }
 
-    const cached = cache.get(cacheKey);
+    const cached = await cache.get(cacheKey);
     if (cached) {
       console.log("Cache hit for", cacheKey, "Content:", cached.length);
       return new Response(cached, {
