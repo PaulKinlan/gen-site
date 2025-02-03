@@ -57,7 +57,9 @@ async function generateSiteContent(
   const contextPrompt =
     context.previousRequests.length > 0
       ? `\n\nContext from previous requests:\n${context.previousRequests
-          .map((req) => `<file name="${req.path}">\n${req.content}\n</file>`)
+          .map(
+            (req) => `<file name="${req.path}">\n${req.value.content}\n</file>`
+          )
           .join("\n\n")}`
       : "";
 
@@ -80,7 +82,7 @@ export default new (class extends BaseHandler {
     const hostname = url.hostname;
     const subdomain = getSiteFromHostname(hostname);
     const path = url.pathname;
-    const cacheKey = `${subdomain}:${path}`;
+    const cacheKey = [subdomain, path];
     const contentType: SupportedContentType = getContentType(path);
 
     console.log("Subdomain:", subdomain);
@@ -103,13 +105,16 @@ export default new (class extends BaseHandler {
     if (!site) return new Response("Site not found", { status: 404 });
 
     if (isMediaFile(path)) {
+      console.log(`Media files are not supported: ${path}`);
       return new Response("Media files are not supported", { status: 400 });
     }
+
+    const previousRequests = await cache.getMatching(subdomain);
 
     const content = await generateSiteContent(
       path,
       site,
-      { previousRequests: [] },
+      { previousRequests },
       contentType
     );
     cache.set(cacheKey, content);

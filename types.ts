@@ -1,3 +1,5 @@
+import { CacheLine } from "./cache.ts";
+
 export interface Site {
   subdomain: string;
   prompt: string;
@@ -47,10 +49,7 @@ export interface Route {
 }
 
 export interface RequestContext {
-  previousRequests: {
-    path: string;
-    content: string;
-  }[];
+  previousRequests: CacheLine[];
 }
 
 export type SupportedContentType =

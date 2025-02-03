@@ -3,6 +3,11 @@ interface CacheEntry {
   timestamp: number;
 }
 
+export type CacheLine = {
+  path: string;
+  value: CacheEntry;
+};
+
 export class Cache {
   private kv: Deno.Kv;
   private TTL: number;
@@ -17,7 +22,7 @@ export class Cache {
     this.kv = await Deno.openKv();
   }
 
-  async set(key: string, value: string): Promise<void> {
+  async set(key: string[], value: string): Promise<void> {
     if (!this.kv) {
       throw new Error("Cache not initialized. Call init() first.");
     }
@@ -28,11 +33,11 @@ export class Cache {
     await this.kv.set([this.PREFIX, key], entry, { expireIn: this.TTL });
   }
 
-  async get(key: string): Promise<string | null> {
+  async get(key: string[]): Promise<string | null> {
     if (!this.kv) {
       throw new Error("Cache not initialized. Call init() first.");
     }
-    const result = await this.kv.get<CacheEntry>([this.PREFIX, key]);
+    const result = await this.kv.get<CacheLine>([this.PREFIX, key]);
 
     if (!result.value) return null;
 
@@ -42,5 +47,31 @@ export class Cache {
     }
 
     return result.value.content;
+  }
+
+  async getMatching(origin: string): Promise<CacheLine[] | null> {
+    if (!this.kv) {
+      throw new Error("Cache not initialized. Call init() first.");
+    }
+    const iter = await this.kv.list<CacheEntry>({
+      prefix: [this.PREFIX, origin],
+    });
+
+    if (!iter) return null;
+
+    const matchingResponses: CacheLine[] = [];
+
+    for await (const res of iter) {
+      matchingResponses.push({ path: res.key[1], value: res.value });
+    }
+
+    return matchingResponses;
+  }
+
+  async delete(key: string): Promise<void> {
+    if (!this.kv) {
+      throw new Error("Cache not initialized. Call init() first.");
+    }
+    await this.kv.delete([this.PREFIX, key]);
   }
 }
