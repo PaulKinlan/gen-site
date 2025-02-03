@@ -3,7 +3,7 @@ import { BaseHandler } from "../../routes/base.ts";
 import { Site, RequestContext, SupportedContentType } from "../../types.ts";
 import { db } from "../../db.ts";
 import { Cache } from "../../cache.ts";
-import { getContentType } from "../../utils/contentType.ts";
+import { getContentType, isMediaFile } from "../../utils/contentType.ts";
 import { getSiteFromHostname } from "../../utils/hostname.ts";
 
 const cache = new Cache();
@@ -101,6 +101,10 @@ export default new (class extends BaseHandler {
     const site = await db.getSite(subdomain);
     console.log("Site:", site);
     if (!site) return new Response("Site not found", { status: 404 });
+
+    if (isMediaFile(path)) {
+      return new Response("Media files are not supported", { status: 400 });
+    }
 
     const content = await generateSiteContent(
       path,
