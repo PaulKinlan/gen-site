@@ -67,6 +67,8 @@ export class Cache {
       matchingResponses.push({ path: res.key[1], value: res.value });
     }
 
+    console.log("matchingResponses", matchingResponses);
+
     return matchingResponses;
   }
 
