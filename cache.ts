@@ -18,6 +18,9 @@ export class Cache {
   }
 
   async set(key: string, value: string): Promise<void> {
+    if (!this.kv) {
+      throw new Error("Cache not initialized. Call init() first.");
+    }
     const entry: CacheEntry = {
       content: value,
       timestamp: Date.now(),
@@ -26,6 +29,9 @@ export class Cache {
   }
 
   async get(key: string): Promise<string | null> {
+    if (!this.kv) {
+      throw new Error("Cache not initialized. Call init() first.");
+    }
     const result = await this.kv.get<CacheEntry>([this.PREFIX, key]);
 
     if (!result.value) return null;
