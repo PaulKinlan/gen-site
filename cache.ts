@@ -57,6 +57,8 @@ export class Cache {
       prefix: [this.PREFIX, origin],
     });
 
+    console.log("iter", iter);
+
     if (!iter) return null;
 
     const matchingResponses: CacheLine[] = [];
