@@ -57,8 +57,6 @@ export class Cache {
       prefix: [this.PREFIX, origin],
     });
 
-    console.log("iter", iter);
-
     if (!iter) return null;
 
     const matchingResponses: CacheLine[] = [];
@@ -66,8 +64,6 @@ export class Cache {
     for await (const res of iter) {
       matchingResponses.push({ path: res.key[1], value: res.value });
     }
-
-    console.log("matchingResponses", matchingResponses);
 
     return matchingResponses;
   }
