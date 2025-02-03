@@ -7,6 +7,11 @@ import { getContentType } from "../../utils/contentType.ts";
 import { getSiteFromHostname } from "../../utils/hostname.ts";
 
 const cache = new Cache();
+// Initialize the cache immediately
+cache.init().catch((e) => {
+  console.error("Failed to initialize cache:", e);
+  throw e;
+});
 
 const MODEL = "claude-3-5-sonnet-20241022";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
