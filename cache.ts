@@ -30,19 +30,19 @@ export class Cache {
       content: value,
       timestamp: Date.now(),
     };
-    await this.kv.set([this.PREFIX, key], entry, { expireIn: this.TTL });
+    await this.kv.set([this.PREFIX, ...key], entry, { expireIn: this.TTL });
   }
 
   async get(key: string[]): Promise<string | null> {
     if (!this.kv) {
       throw new Error("Cache not initialized. Call init() first.");
     }
-    const result = await this.kv.get<CacheLine>([this.PREFIX, key]);
+    const result = await this.kv.get<CacheLine>([this.PREFIX, ...key]);
 
     if (!result.value) return null;
 
     if (Date.now() - result.value.timestamp > this.TTL) {
-      await this.kv.delete([this.PREFIX, key]);
+      await this.kv.delete([this.PREFIX, ...key]);
       return null;
     }
 
