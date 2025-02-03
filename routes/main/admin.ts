@@ -79,7 +79,13 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
                         <label class="block text-sm font-medium text-gray-700">
                             Site Prompt
                         </label>
-                        <div class="mt-1"><p>${site.subdomain}</p></div>
+                        <div class="mt-1">
+                          <p>Preview: <a href="https://${
+                            site.subdomain
+                          }.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${
+                      site.subdomain
+                    }.itsmy.blog</a></p>
+                        </div>
                         <div class="mt-1">
                             <textarea id="prompt" name="prompt" rows="4" required 
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 

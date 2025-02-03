@@ -70,7 +70,7 @@ const routes: Route[] = [
     handler: (await import("./routes/main/index.ts")).default,
   },
   {
-    pattern: new URLPattern({ hostname: "(.+).makemy.blog" }),
+    pattern: new URLPattern({ hostname: "(.+).itsmy.blog" }),
     handler: (await import("./routes/subdomain/index.ts")).default,
   },
 ];
