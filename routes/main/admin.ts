@@ -1,10 +1,10 @@
 import { BaseHandler } from "../base.ts";
 import { Site } from "../../types.ts";
 import { db } from "../../db.ts";
-import { getCookies } from "@std/http/cookie";
 import { authenticated } from "../decorators/authenticated.ts";
+import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 
-const template = `<!DOCTYPE html>
+const template = (sites: Site[]) => `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -68,6 +68,39 @@ const template = `<!DOCTYPE html>
                         </button>
                     </div>
                 </form>
+
+                <h2 class="text-2xl font-bold mb-6">Your Sites</h2>
+
+                ${sites
+                  .map(
+                    (site) => `
+                    <form>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            Site Prompt
+                        </label>
+                        <div class="mt-1"><p>${site.subdomain}</p></div>
+                        <div class="mt-1">
+                            <textarea id="prompt" name="prompt" rows="4" required 
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                            focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            placeholder="Describe how your site should be generated...">${escapeHtml(
+                              site.prompt
+                            )}</textarea>
+                        </div>
+                        <div>
+                        <button type="submit"
+                            class="w-full flex justify-center py-2 px-4 border border-transparent 
+                            rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 
+                            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                            focus:ring-blue-500">
+                            Update
+                        </button>
+                    </div>
+                    </div>
+                    </form>`
+                  )
+                  .join("")}
             </div>
         </div>
     </div>
@@ -78,25 +111,6 @@ const template = `<!DOCTYPE html>
         const { subdomain } = await response.json();
         document.getElementById('subdomain').value = subdomain;
     });
-
-    document.getElementById('create-site-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-        
-        try {
-            const response = await fetch('/api/sites', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            if (!response.ok) throw new Error(await response.text());
-            window.location.href = '/admin';
-        } catch (error) {
-            alert(error.message);
-        }
-    });
     </script>
 </body>
 </html>`;
@@ -104,33 +118,29 @@ const template = `<!DOCTYPE html>
 export default new (class extends BaseHandler {
   @authenticated({ redirect: "/login" })
   async get(req: Request): Promise<Response> {
-    return new Response(template, {
+    const sites = await db.getSites(req.extraInformation.userId);
+
+    return new Response(template(sites), {
       headers: { "Content-Type": "text/html" },
     });
   }
 
+  @authenticated({ redirect: "/login" })
   async post(req: Request): Promise<Response> {
     // Get the auth cookie.
-    const { auth } = getCookies(req.headers);
-
-    console.log(auth);
-
-    // Check if the user is authenticated
-    // If the user is not authenticated, redirect to the login page.
-    if (!auth) {
-      return Response.redirect("/login");
-    }
-
     try {
-      const data = await req.json();
+      const data = await req.formData();
+      const subdomain = data.get("subdomain");
+      const prompt = data.get("prompt");
+
       const site: Site = {
-        subdomain: data.subdomain,
-        prompt: data.prompt,
-        userId: req.userId, // Assuming auth middleware sets this
+        subdomain,
+        prompt,
+        userId: req.extraInformation.userId, // Assuming auth middleware sets this
       };
 
       await db.createSite(site);
-      return new Response(JSON.stringify({ success: true }));
+      return Response.redirect(req.url, 303);
     } catch (error) {
       return new Response(error.message, { status: 400 });
     }

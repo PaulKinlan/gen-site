@@ -21,6 +21,15 @@ export const db = {
     return result.value as Site | null;
   },
 
+  async getSites(userId: string): Promise<Site[]> {
+    const result = await kv.list({ prefix: ["sites_by_user", userId] });
+    const sites: Site[] = [];
+    for await (const res of result) {
+      sites.push(res.value);
+    }
+    return sites;
+  },
+
   async createSite(site: Site): Promise<void> {
     await kv.set(["sites", site.subdomain], site);
     await kv.set(["sites_by_user", site.userId, site.subdomain], site);
