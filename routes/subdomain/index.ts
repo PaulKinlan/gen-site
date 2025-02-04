@@ -45,6 +45,16 @@ function extractContentFromMarkdown(
   return match[1].trim();
 }
 
+const additionalPromptForContentType: Record<string, string> = {
+  html: `You must follow these rules when generating HTML content:
++ Generate valid HTML5 content
++ Include semantic markup and ensure accessibility. 
++ Do not use inline CSS or <style> blocks, instead link to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
++ Prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.`,
+  css: "Generate clean, modern CSS. Use flex-box/grid where appropriate. Include responsive design considerations. Include light and dark mode.",
+  js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
+};
+
 // Site generation helper
 async function generateSiteContent(
   path: string,
@@ -52,18 +62,29 @@ async function generateSiteContent(
   context: RequestContext,
   contentType: SupportedContentType
 ): Promise<string> {
-  const basePrompt = `You are an AI content generator that creates web content for the following site:\n\n${site.prompt}`;
+  const basePrompt = `You are an AI content generator that creates web content for the following site based on the context in the <prompt> tags.
+
+  You will have access to the content of the previous requests in the <files> tag, with each <file> representing a different path on the site.
+  
+  <prompt>
+    ${site.prompt}
+  </prompt>`;
 
   const contextPrompt =
     context.previousRequests.length > 0
-      ? `\n\nContext from previous requests:\n${context.previousRequests
-          .map(
-            (req) => `<file name="${req.path}">\n${req.value.content}\n</file>`
-          )
-          .join("\n\n")}`
+      ? `\n\nContext from previous requests:\n<files>${context.previousRequests
+          .map((req) => {
+            console.log("REQUEST", req);
+            return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
+          })
+          .join("\n\n")}</files>`
       : "";
 
-  const prompt = `${basePrompt}${contextPrompt}\n\nGenerate ${contentType.toUpperCase()} content for the path "${path}".`;
+  const prompt = `${basePrompt}${contextPrompt}
+  
+${additionalPromptForContentType[contentType]} for path "${path}".`;
+
+  console.log("Prompt:", prompt);
 
   // TODO: think about system / user roles.
   const message = await anthropic.messages.create({
@@ -91,7 +112,8 @@ export default new (class extends BaseHandler {
       return new Response("Subdomain not found", { status: 404 });
     }
 
-    const cached = await cache.get(cacheKey);
+    const cached =
+      subdomain != "localhost" ? await cache.get(cacheKey) : undefined;
     if (cached) {
       console.log("Cache hit for", cacheKey, "Content:", cached.length);
       return new Response(cached, {
@@ -117,6 +139,8 @@ export default new (class extends BaseHandler {
       { previousRequests },
       contentType
     );
+
+    console.log("CACHEKEY", cacheKey, "Content:", content.length);
     cache.set(cacheKey, content);
 
     return new Response(content, {

@@ -87,6 +87,10 @@ const routes: Route[] = [
     handler: (await import("./routes/main/index.ts")).default,
   },
   {
+    pattern: new URLPattern({ hostname: "0.0.0.0" }),
+    handler: (await import("./routes/subdomain/index.ts")).default,
+  },
+  {
     pattern: new URLPattern({ hostname: "makemy.blog" }),
     handler: (await import("./routes/main/index.ts")).default,
   },

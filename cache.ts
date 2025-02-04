@@ -62,7 +62,10 @@ export class Cache {
     const matchingResponses: CacheLine[] = [];
 
     for await (const res of iter) {
-      matchingResponses.push({ path: res.key[1], value: res.value });
+      matchingResponses.push({
+        path: res.key.slice(1).join("/"),
+        value: res.value,
+      });
     }
 
     return matchingResponses;
