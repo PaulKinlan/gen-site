@@ -11,7 +11,7 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
     <title>Admin Dashboard - makemy.blog</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 h-dvh flex flex-col">
     <nav class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -25,11 +25,11 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div class="px-4 py-6 sm:px-0">
-            <div class="border-4 border-dashed border-gray-200 rounded-lg p-6">
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 h-full w-full">
+        <div class="px-4 py-6 sm:px-0 h-full">
+            <div class="border-4 border-dashed border-gray-200 rounded-lg p-6 flex flex-col h-full">
                 <h2 class="text-2xl font-bold mb-6">Create New Site</h2>
-                <form id="create-site-form" class="space-y-6" method="post" enctype="multipart/form-data">
+                <form id="create-site-form" class="space-y-3 flex flex-col grow" method="post" enctype="multipart/form-data">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
                             Site Name
@@ -46,14 +46,14 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
                         </div>
                     </div>
 
-                    <div>
+                    <div class="flex flex-col grow">
                         <label class="block text-sm font-medium text-gray-700">
                             Site Prompt
                         </label>
-                        <div class="mt-1">
+                        <div class="mt-1 grow h-full">
                             <textarea id="prompt" name="prompt" rows="4" required
                                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm grow h-full"
                                 placeholder="Describe how your site should be generated..."></textarea>
                         </div>
                     </div>
@@ -82,7 +82,7 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
                       <div>
                         <div class="mt-1">
                           <div class="flex justify-between items-center">
-                            <p>Preview: <a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
+                            <p><a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
                             <a href="/admin/edit?subdomain=${site.subdomain}" class="text-blue-600 hover:text-blue-800">Edit</a>
                           </div>
                         </div>
