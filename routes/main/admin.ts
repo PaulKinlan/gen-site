@@ -3,6 +3,7 @@ import { Site } from "../../types.ts";
 import { db } from "../../db.ts";
 import { authenticated } from "../decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
+import { generatePrompt } from "./admin/resources/prompts.ts";
 
 const template = (sites: Site[]) => `<!DOCTYPE html>
 <html lang="en">
@@ -54,7 +55,9 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
                             <textarea id="prompt" name="prompt" rows="4" required
                                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
                                 focus:ring-blue-500 focus:border-blue-500 sm:text-sm grow h-full"
-                                placeholder="Describe how your site should be generated..."></textarea>
+                                placeholder="${escapeHtml(
+                                  generatePrompt()
+                                )}"></textarea>
                         </div>
                     </div>
 
