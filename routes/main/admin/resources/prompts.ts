@@ -2,12 +2,15 @@
 
 const prompts = [
   `A fan site about Everton FC.
-  
-  Include a brief history of the club, its most famous players, and its greatest achievements.
 
-  Include a section on the club's current squad and recent results.
+[page]
+a brief history of the club, its most famous players, and its greatest achievements.
 
-  Include a section on the club's stadium and the matchday experience.
+[page]
+The club's current squad and recent results.
+
+[page]
+The club's stadium and the match-day experience.
   `,
   `A blog about the history of Ruthin, North Wales`,
   `A blog about the best places to eat in London.`,
