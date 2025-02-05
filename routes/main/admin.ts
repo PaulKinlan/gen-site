@@ -110,7 +110,7 @@ const template = (sites: Site[]) => {
         input.value = subdomain;
     });
 
-    async function deleteSite(subdomain: string): Promise<void> {
+    async function deleteSite(subdomain) {
         if (!confirm('Are you sure you want to delete this site? This action cannot be undone.')) {
             return;
         }
