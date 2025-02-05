@@ -1,14 +1,22 @@
+/// <reference lib="deno.ns" />
 import { Route } from "./types.ts";
 
 async function init() {
   const kv = await Deno.openKv();
 
-  // Initialize default site
-  const defaultPrompt = await Deno.readTextFile("./prompt.txt");
-  await kv.set(["sites", "localhost"], {
-    subdomain: "localhost",
-    prompt: defaultPrompt,
-  });
+  // Load all prompts into cache
+  for await (const entry of Deno.readDir("./routes/subdomain/prompts")) {
+    if (entry.isFile && entry.name.endsWith(".md")) {
+      const subdomain = entry.name.slice(0, -3); // Remove .md extension
+      const content = await Deno.readTextFile(
+        `./routes/subdomain/prompts/${entry.name}`
+      );
+      await kv.set(["sites", subdomain], {
+        subdomain: subdomain,
+        prompt: content,
+      });
+    }
+  }
 }
 
 const routes: Route[] = [
