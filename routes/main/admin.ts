@@ -125,7 +125,7 @@ const template = (sites: Site[]) => {
                 alert('Failed to delete site: ' + error);
             }
         } catch (error) {
-            alert('Failed to delete site: ' + (error as Error).message);
+            alert('Failed to delete site: ' + error.message);
         }
     }
     </script>
