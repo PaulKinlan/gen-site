@@ -5,7 +5,26 @@ import { authenticated } from "../decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { generatePrompt } from "./admin/resources/prompts.ts";
 
-const template = (sites: Site[]) => `<!DOCTYPE html>
+const template = (sites: Site[]) => {
+  const siteList = sites
+    .map(
+      (site) => `
+    <div>
+      <div class="mt-1">
+        <div class="flex justify-between items-center">
+          <p><a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
+          <div class="flex gap-4">
+            <a href="/admin/edit?subdomain=${site.subdomain}" class="text-blue-600 hover:text-blue-800">Edit</a>
+            <button onclick="deleteSite('${site.subdomain}')" class="text-red-600 hover:text-red-800">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -78,20 +97,7 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
 
                 <h2 class="text-2xl font-bold mb-6">Your Sites</h2>
 
-                ${sites
-                  .map(
-                    (site) => `
-                   
-                      <div>
-                        <div class="mt-1">
-                          <div class="flex justify-between items-center">
-                            <p><a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
-                            <a href="/admin/edit?subdomain=${site.subdomain}" class="text-blue-600 hover:text-blue-800">Edit</a>
-                          </div>
-                        </div>
-                        </div>`
-                  )
-                  .join("")}
+                ${siteList}
             </div>
         </div>
     </div>
@@ -100,15 +106,36 @@ const template = (sites: Site[]) => `<!DOCTYPE html>
     document.getElementById('generate-name').addEventListener('click', async () => {
         const response = await fetch('/api/generate-name');
         const { subdomain } = await response.json();
-        document.getElementById('subdomain').value = subdomain;
+        const input = document.getElementById('subdomain');
+        input.value = subdomain;
     });
+
+    async function deleteSite(subdomain: string): Promise<void> {
+        if (!confirm('Are you sure you want to delete this site? This action cannot be undone.')) {
+            return;
+        }
+        try {
+            const response = await fetch(\`/admin?subdomain=\${subdomain}\`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const error = await response.text();
+                alert('Failed to delete site: ' + error);
+            }
+        } catch (error) {
+            alert('Failed to delete site: ' + (error as Error).message);
+        }
+    }
     </script>
 </body>
 </html>`;
+};
 
 export default new (class extends BaseHandler {
   @authenticated({ redirect: "/login" })
-  async get(req: Request): Promise<Response> {
+  override async get(req: Request): Promise<Response> {
     const sites = await db.getSites(req.extraInformation?.userId || "");
 
     return new Response(template(sites), {
@@ -117,8 +144,7 @@ export default new (class extends BaseHandler {
   }
 
   @authenticated({ redirect: "/login" })
-  async post(req: Request): Promise<Response> {
-    // Get the auth cookie.
+  override async post(req: Request): Promise<Response> {
     try {
       const data = await req.formData();
       const subdomain = data.get("subdomain")?.toString();
@@ -131,13 +157,30 @@ export default new (class extends BaseHandler {
       const site: Site = {
         subdomain,
         prompt,
-        userId: req.extraInformation?.userId || "", // Assuming auth middleware sets this
+        userId: req.extraInformation?.userId || "",
       };
 
       await db.createSite(site);
       return Response.redirect(req.url, 303);
     } catch (error) {
-      return new Response(error.message, { status: 400 });
+      return new Response((error as Error).message, { status: 400 });
+    }
+  }
+
+  @authenticated({ redirect: "/login" })
+  override async delete(req: Request): Promise<Response> {
+    try {
+      const url = new URL(req.url);
+      const subdomain = url.searchParams.get("subdomain");
+
+      if (!subdomain) {
+        throw new Error("Missing subdomain");
+      }
+
+      await db.deleteSite(subdomain, req.extraInformation?.userId || "");
+      return new Response(null, { status: 204 });
+    } catch (error) {
+      return new Response((error as Error).message, { status: 400 });
     }
   }
 })();

@@ -17,6 +17,7 @@
 
   "compilerOptions": {
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "lib": ["deno.ns", "dom", "esnext"],
     "types": ["./types.ts"]
   }

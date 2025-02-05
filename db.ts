@@ -1,3 +1,4 @@
+/// <reference lib="deno.unstable" />
 import { Site, User } from "./types.ts";
 
 const kv = await Deno.openKv();
@@ -33,6 +34,20 @@ export const db = {
   async createSite(site: Site): Promise<void> {
     await kv.set(["sites", site.subdomain], site);
     await kv.set(["sites_by_user", site.userId, site.subdomain], site);
+  },
+
+  async deleteSite(subdomain: string, userId: string): Promise<void> {
+    const site = await this.getSite(subdomain);
+    if (!site || site.userId !== userId) {
+      throw new Error("Site not found or unauthorized");
+    }
+
+    const atomic = kv.atomic();
+    atomic
+      .delete(["sites", subdomain])
+      .delete(["sites_by_user", userId, subdomain]);
+
+    await atomic.commit();
   },
 
   async createUser(user: User): Promise<void> {
