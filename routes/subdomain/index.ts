@@ -5,10 +5,11 @@ import { db } from "../../db.ts";
 import { Cache } from "../../cache.ts";
 import { getContentType, isMediaFile } from "../../utils/contentType.ts";
 import { getSiteFromHostname } from "../../utils/hostname.ts";
+import { cache } from "../../routes/decorators/cache.ts";
 
-const cache = new Cache();
+const cacheInstance = new Cache();
 // Initialize the cache immediately
-cache.init().catch((e) => {
+cacheInstance.init().catch((e) => {
   console.error("Failed to initialize cache:", e);
   throw e;
 });
@@ -94,34 +95,23 @@ ${additionalPromptForContentType[contentType]} for path "${path}".`;
   });
 
   // TODO: Implement Claude/AI integration
-  return extractContentFromMarkdown(message.content[0].text, contentType);
+  const content = message.content[0];
+  if (content.type !== "text") {
+    throw new Error("Expected text content from Claude");
+  }
+  return extractContentFromMarkdown(content.text, contentType);
 }
 
-export default new (class extends BaseHandler {
-  async get(req: Request): Promise<Response> {
+class SubdomainHandler extends BaseHandler {
+  @cache({ cache: cacheInstance })
+  override async get(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const hostname = url.hostname;
     const subdomain = getSiteFromHostname(hostname);
     const path = url.pathname;
-    const cacheKey = [subdomain, path];
     const contentType: SupportedContentType = getContentType(path);
 
     console.log("Subdomain:", subdomain);
-
-    if (subdomain == undefined) {
-      return new Response("Subdomain not found", { status: 404 });
-    }
-
-    const cached =
-      subdomain != "localhost" ? await cache.get(cacheKey) : undefined;
-    if (cached) {
-      console.log("Cache hit for", cacheKey, "Content:", cached.length);
-      return new Response(cached, {
-        status: 200,
-        headers: { "Content-Type": `text/${contentType}` },
-      });
-    }
-
     const site = await db.getSite(subdomain);
     console.log("Site:", site);
     if (!site) return new Response("Site not found", { status: 404 });
@@ -131,7 +121,7 @@ export default new (class extends BaseHandler {
       return new Response("Media files are not supported", { status: 400 });
     }
 
-    const previousRequests = await cache.getMatching(subdomain);
+    const previousRequests = (await cacheInstance.getMatching(subdomain)) ?? [];
 
     const content = await generateSiteContent(
       path,
@@ -140,12 +130,11 @@ export default new (class extends BaseHandler {
       contentType
     );
 
-    console.log("CACHEKEY", cacheKey, "Content:", content.length);
-    cache.set(cacheKey, content);
-
     return new Response(content, {
       status: 200,
       headers: { "Content-Type": `text/${contentType}` },
     });
   }
-})();
+}
+
+export default new SubdomainHandler();
