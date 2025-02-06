@@ -9,7 +9,7 @@ export type CacheLine = {
 };
 
 export class Cache {
-  private kv: Deno.Kv;
+  private kv?: Deno.Kv;
   private TTL: number;
   private PREFIX = "cache:";
 
