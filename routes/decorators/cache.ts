@@ -1,6 +1,7 @@
 import { Cache } from "../../cache.ts";
 import { getContentType } from "../../utils/contentType.ts";
 import { getSiteFromHostname } from "../../utils/hostname.ts";
+import { isMediaFile } from "../../utils/contentType.ts";
 
 export function cache({ cache }: { cache: Cache }) {
   return function (
@@ -20,6 +21,11 @@ export function cache({ cache }: { cache: Cache }) {
 
       if (subdomain === undefined) {
         return new Response("Subdomain not found", { status: 404 });
+      }
+
+      if (isMediaFile(url)) {
+        // Don't attempt to find image files in the cache.
+        return originalMethod.apply(this, args);
       }
 
       // Skip cache for localhost

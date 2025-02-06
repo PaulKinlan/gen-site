@@ -111,9 +111,8 @@ class SubdomainHandler extends BaseHandler {
     const path = url.pathname;
     const contentType: SupportedContentType = getContentType(path);
 
-    console.log("Subdomain:", subdomain);
     const site = await db.getSite(subdomain);
-    console.log("Site:", site);
+
     if (!site) return new Response("Site not found", { status: 404 });
 
     if (isMediaFile(path)) {
@@ -121,6 +120,7 @@ class SubdomainHandler extends BaseHandler {
       return new Response("Media files are not supported", { status: 400 });
     }
 
+    // Get previous requests for this subdomain
     const previousRequests = (await cacheInstance.getMatching(subdomain)) ?? [];
 
     const content = await generateSiteContent(
