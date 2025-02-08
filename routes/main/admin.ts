@@ -55,9 +55,16 @@ const template = (sites: Site[]) => {
                             Site Name
                         </label>
                         <div class="mt-1 flex">
-                            <input type="text" id="subdomain" name="subdomain" readonly
-                                class="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md 
-                                shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <div class="flex-1 flex items-center">
+                                <input type="text" id="subdomain" name="subdomain"
+                                    class="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md 
+                                    shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    placeholder="Enter a name or generate one">
+                                <span id="availability-indicator" class="ml-2 hidden">
+                                    <span id="available" class="text-green-600 hidden">✓</span>
+                                    <span id="unavailable" class="text-red-600 hidden">✗</span>
+                                </span>
+                            </div>
                             <button type="button" id="generate-name"
                                 class="ml-3 inline-flex items-center px-4 py-2 border border-transparent 
                                 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
@@ -103,11 +110,59 @@ const template = (sites: Site[]) => {
     </div>
 
     <script>
+    let checkNameTimeout;
+    
+    async function checkNameAvailability(name) {
+        const indicator = document.getElementById('availability-indicator');
+        const available = document.getElementById('available');
+        const unavailable = document.getElementById('unavailable');
+        
+        if (!name) {
+            indicator.classList.add('hidden');
+            return;
+        }
+
+        // Check if the subdomain would form a valid URL
+        try {
+            new URL(\`https://\${name}.itsmy.blog\`);
+        } catch {
+            indicator.classList.remove('hidden');
+            available.classList.add('hidden');
+            unavailable.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const response = await fetch(\`/api/check-name?name=\${encodeURIComponent(name)}\`);
+            const data = await response.json();
+            
+            indicator.classList.remove('hidden');
+            if (data.available) {
+                available.classList.remove('hidden');
+                unavailable.classList.add('hidden');
+            } else {
+                available.classList.add('hidden');
+                unavailable.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error checking name availability:', error);
+            indicator.classList.add('hidden');
+        }
+    }
+
+    document.getElementById('subdomain').addEventListener('input', (e) => {
+        clearTimeout(checkNameTimeout);
+        checkNameTimeout = setTimeout(() => {
+            checkNameAvailability(e.target.value);
+        }, 300);
+    });
+
     document.getElementById('generate-name').addEventListener('click', async () => {
         const response = await fetch('/api/generate-name');
         const { subdomain } = await response.json();
         const input = document.getElementById('subdomain');
         input.value = subdomain;
+        checkNameAvailability(subdomain);
     });
 
     async function deleteSite(subdomain) {
@@ -152,6 +207,11 @@ export default new (class extends BaseHandler {
 
       if (!subdomain || !prompt) {
         throw new Error("Missing required fields");
+      }
+
+      // Validate if the subdomain would form a valid URL
+      if (!URL.canParse(`https://${subdomain}.itsmy.blog`)) {
+        throw new Error("Invalid subdomain");
       }
 
       const site: Site = {

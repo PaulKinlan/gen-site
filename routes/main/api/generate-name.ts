@@ -1,6 +1,7 @@
 import { db } from "../../../db.ts";
 import { BaseHandler } from "../../base.ts";
 import { generate } from "random-words";
+import { authenticated } from "../../decorators/authenticated.ts";
 
 const generateUniqueName = async (): Promise<string> => {
   let subdomain;
@@ -12,6 +13,7 @@ const generateUniqueName = async (): Promise<string> => {
 };
 
 export default new (class extends BaseHandler {
+  @authenticated({ redirect: "/login" })
   async get(req: Request): Promise<Response> {
     const subdomain = await generateUniqueName();
     return new Response(JSON.stringify({ subdomain }), {

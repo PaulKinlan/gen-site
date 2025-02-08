@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import { Route } from "./types.ts";
+import { Route, ValidHTTPMethodForRoute } from "./types.ts";
 
 async function init() {
   const kv = await Deno.openKv();
@@ -17,6 +17,16 @@ async function init() {
       });
     }
   }
+}
+
+function isValidHTTPMethod(method: string): method is ValidHTTPMethodForRoute {
+  const lowerCaseMethod = method.toLowerCase();
+  return (
+    lowerCaseMethod === "get" ||
+    lowerCaseMethod === "post" ||
+    lowerCaseMethod === "put" ||
+    lowerCaseMethod === "delete"
+  );
 }
 
 const routes: Route[] = [
@@ -91,6 +101,20 @@ const routes: Route[] = [
     handler: (await import("./routes/main/api/generate-name.ts")).default,
   },
   {
+    pattern: new URLPattern({
+      hostname: "localhost",
+      pathname: "/api/check-name",
+    }),
+    handler: (await import("./routes/main/api/check-name.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "makemy.blog",
+      pathname: "/api/check-name",
+    }),
+    handler: (await import("./routes/main/api/check-name.ts")).default,
+  },
+  {
     pattern: new URLPattern({ hostname: "localhost" }),
     handler: (await import("./routes/main/index.ts")).default,
   },
@@ -121,8 +145,25 @@ Deno.serve(async (req: Request) => {
       return new Response("Not Found", { status: 404 });
     }
 
-    return matchingRoute.handler[req.method.toLowerCase()](req);
-  } catch (e) {
-    return new Response(e.message, { status: 500 });
+    const method = req.method.toLowerCase();
+    if (isValidHTTPMethod(method)) {
+      const handler = matchingRoute.handler;
+
+      switch (method) {
+        case "get":
+          return handler.get(req);
+        case "post":
+          return handler.post(req);
+        case "put":
+          return handler.put(req);
+        case "delete":
+          return handler.delete(req);
+      }
+    }
+
+    return new Response("Method not allowed", { status: 405 });
+  } catch (e: unknown) {
+    const error = e as Error;
+    return new Response(error.message, { status: 500 });
   }
 });

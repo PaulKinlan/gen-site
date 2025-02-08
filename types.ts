@@ -38,15 +38,18 @@ export interface User {
   createdAt: Date;
 }
 
+export type ValidHTTPMethodForRoute = "get" | "post" | "put" | "delete";
+
 export interface Route {
   pattern: URLPattern;
   handler: {
-    get(req: Request): Promise<Response>;
-    post?(req: Request): Promise<Response>;
-    put?(req: Request): Promise<Response>;
-    delete?(req: Request): Promise<Response>;
+    [key in ValidHTTPMethodForRoute]: (req: Request) => Promise<Response>;
   };
 }
+
+export type RequestHandler = {
+  [key in ValidHTTPMethodForRoute]: (req: Request) => Promise<Response>;
+};
 
 export interface RequestContext {
   previousRequests: CacheLine[];
