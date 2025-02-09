@@ -90,6 +90,8 @@ async function generateSiteContent(
           .join("\n\n")}</importedContext>`
       : "";
 
+  console.log(`Imported Context: ${importedContext}`);
+
   const prompt = `${basePrompt}
 ${previousRequestContext}
 ${importedContext}

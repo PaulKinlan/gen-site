@@ -32,7 +32,7 @@ export async function initQueueHandler() {
       const html = await response.text();
       const markdown = extractMarkdown(html);
       // ... do something to actually send the notification!
-      db.setExtractedMarkdown(msg.site, msg.url, markdown);
+      db.setExtractedMarkdown(msg.site, msg.url, markdown.markdown);
     } else {
       // If the message is of an unknown type, it might be an error
       console.error("Unknown message received:", msg);
