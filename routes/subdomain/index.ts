@@ -66,6 +66,8 @@ async function generateSiteContent(
   const basePrompt = `You are an AI content generator that creates web content for the following site based on the context in the <prompt> tags.
 
   You will have access to the content of the previous requests in the <files> tag, with each <file> representing a different path on the site.
+
+  You will also have access to the extracted context from the imported URLs in the <importedContext> tag, with each <context> representing a different URL that the user would you to reference.
   
   <prompt>
     ${site.prompt}
