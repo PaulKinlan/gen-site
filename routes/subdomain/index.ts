@@ -83,7 +83,7 @@ async function generateSiteContent(
 
   const importedContext =
     context.importedContext.length > 0
-      ? `\n\nImported context for @url referenceds:\n<importedContext>${context.importedContext
+      ? `\n\nImported context for @url references\n<importedContext>${context.importedContext
           .map((ctx) => {
             return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
           })

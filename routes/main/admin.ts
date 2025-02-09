@@ -1,6 +1,6 @@
 import { BaseHandler } from "@makemy/routes/base.ts";
 import { Site } from "@makemy/types.ts";
-import { db, kv } from "@makemy/core/db.ts";
+import { db } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { generatePrompt } from "@makemy/routes/main/admin/resources/prompts.ts";
@@ -343,7 +343,7 @@ export default new (class extends BaseHandler {
           // Validate URL
           new URL(url);
           // Store URL and queue task
-          await db.addUrlToMontior(subdomain, url, prompt);
+          await db.addUrlToMontior(subdomain, url);
           // Instantly enqueue the task, it will be check later
           await kv.enqueue({ site: subdomain, url }, { delay: 0 });
         } catch (error) {

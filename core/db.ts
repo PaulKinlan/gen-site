@@ -1,8 +1,11 @@
 /// <reference lib="deno.unstable" />
 import { Site, User, CustomDomain } from "../types.ts";
 
-export const kv = await Deno.openKv();
+const kv = await Deno.openKv();
 
+type UrlsForSite = {
+  [subdomain: string]: string[];
+};
 export const db = {
   async setSession(userId: string, sessionId: string): Promise<void> {
     await kv.set(["sessions", sessionId], userId, {
@@ -64,27 +67,45 @@ export const db = {
     await atomic.commit();
   },
 
-  async addUrlToMontior(subdomain: string, url: string, content: string) {
+  async addUrlToMontior(subdomain: string, url: string) {
     const site = await this.getSite(subdomain);
     if (!site) throw new Error("Site not found");
 
     // URLs that we parse MUST be locked to the site to stop people trying to sneak out data from another user.
 
-    await kv.set(["sites_urls", subdomain, url], content);
-    return;
+    let result = await kv.get<string[]>(["sites_urls", subdomain]);
+    let urls = result.value || [];
+
+    const urlSet = new Set(urls);
+    urlSet.add(url);
+    const uniqueUrls = Array.from(urlSet);
+
+    await kv.set(["sites_urls", subdomain], uniqueUrls);
   },
 
-  async getAllUrlsToMonitor(subdomain: string): Promise<string[]> {
-    const result = await kv.list<string>({ prefix: ["sites_urls", subdomain] });
-    const urls: string[] = [];
+  async getAllUrlsToMonitor(): Promise<UrlsForSite> {
+    const result = await kv.list<string[]>({ prefix: ["sites_urls"] });
+
+    const results: UrlsForSite = {};
+
     for await (const res of result) {
-      urls.push(res.key[2]);
+      results[res.key[2] as string] = res.value;
     }
-    return urls;
+
+    return results || [];
   },
 
   async removeUrlToMonitor(subdomain: string, url: string): Promise<void> {
-    await kv.delete(["sites_urls", subdomain, url]);
+    let result = await kv.get<string[]>(["sites_urls", subdomain]);
+    const urls = result.value || [];
+
+    const uniqueUrls = urls.filter((u) => u == url);
+
+    if (uniqueUrls.length === 0) {
+      await kv.delete(["sites_urls", subdomain]);
+    } else {
+      await kv.set(["sites_urls", subdomain], uniqueUrls);
+    }
   },
 
   async getAllExtractedMarkdown(
@@ -116,7 +137,7 @@ export const db = {
   },
 
   async setExtractedMarkdown(subdomain: string, url: string, markdown: string) {
-    await kv.set(["sites_urls", subdomain, url], markdown);
+    await kv.set(["sites_extracted_markdown", subdomain, url], markdown);
     return;
   },
 
