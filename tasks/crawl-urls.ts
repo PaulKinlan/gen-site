@@ -11,6 +11,7 @@ async function crawlSitesUrls() {
   const entries = db.getAllUrlsToMonitor();
 
   for (const [key, entry] of Object.entries(entries)) {
+    console.log(`Processing ${key}, ${entry.length} URLs`);
     const [subdomain] = key;
     const urls = entry;
     for (const url of urls) {
