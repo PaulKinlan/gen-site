@@ -5,6 +5,8 @@ import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { generatePrompt } from "@makemy/routes/main/admin/resources/prompts.ts";
 
+const kv = await Deno.openKv();
+
 const template = (sites: Site[]) => {
   const siteList = sites
     .map(
@@ -347,7 +349,7 @@ export default new (class extends BaseHandler {
           // Instantly enqueue the task, it will be check later
           await kv.enqueue({ site: subdomain, url }, { delay: 0 });
         } catch (error) {
-          console.error(`Invalid URL in prompt: ${url}`);
+          console.error(`Invalid URL in prompt: ${url}, ${error}`);
         }
       }
       return Response.redirect(req.url, 303);

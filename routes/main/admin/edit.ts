@@ -4,6 +4,8 @@ import { db } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 
+const kv = await Deno.openKv();
+
 const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -181,7 +183,7 @@ export default new (class extends BaseHandler {
             { delay: 0 } // 1 hour delay
           );
         } catch (urlError) {
-          console.error(`Invalid URL in prompt: ${url}`);
+          console.error(`Invalid URL in prompt: ${url}, ${urlError}`);
         }
       }
 
