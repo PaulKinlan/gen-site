@@ -1,11 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { BaseHandler } from "../../routes/base.ts";
-import { Site, RequestContext, SupportedContentType } from "../../types.ts";
-import { db } from "../../db.ts";
-import { Cache } from "../../cache.ts";
-import { getContentType, isMediaFile } from "../../utils/contentType.ts";
-import { getSiteFromHostname } from "../../utils/hostname.ts";
-import { cache } from "../../routes/decorators/cache.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
+import { Site, RequestContext, SupportedContentType } from "@makemy/types.ts";
+import { db } from "@makemy/core/db.ts";
+import { Cache } from "@makemy/core/cache.ts";
+import { getContentType, isMediaFile } from "@makemy/utils/contentType.ts";
+import { getSiteFromHostname } from "@makemy/utils/hostname.ts";
+import { cache } from "@makemy/routes/decorators/cache.ts";
 
 const cacheInstance = new Cache();
 // Initialize the cache immediately

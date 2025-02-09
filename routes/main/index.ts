@@ -1,4 +1,4 @@
-import { BaseHandler } from "../base.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
 
 const HTML = `<!DOCTYPE html>
 <html lang="en">

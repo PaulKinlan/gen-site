@@ -1,5 +1,5 @@
 /// <reference lib="deno.unstable" />
-import { Site, User, CustomDomain } from "./types.ts";
+import { Site, User, CustomDomain } from "../types.ts";
 
 const kv = await Deno.openKv();
 

@@ -1,6 +1,6 @@
-import { auth } from "../../auth.ts";
-import { db } from "../../db.ts";
-import { BaseHandler } from "../base.ts";
+import { auth } from "@makemy/utils/auth.ts";
+import { db } from "@makemy/core/db.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
 import { setCookie } from "@std/http/cookie";
 import path from "npm:path";
 

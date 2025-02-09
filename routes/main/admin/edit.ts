@@ -1,7 +1,7 @@
-import { BaseHandler } from "../../base.ts";
-import { Site } from "../../../types.ts";
-import { db } from "../../../db.ts";
-import { authenticated } from "../../decorators/authenticated.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
+import { Site } from "@makemy/types.ts";
+import { db } from "@makemy/core/db.ts";
+import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 
 const template = (site: Site | null, error?: string) => `<!DOCTYPE html>

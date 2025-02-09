@@ -1,5 +1,5 @@
-import { BaseHandler } from "../../../routes/base.ts";
-import { db } from "../../../db.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
+import { db } from "@makemy/core/db.ts";
 
 export default new (class extends BaseHandler {
   override async get(req: Request): Promise<Response> {

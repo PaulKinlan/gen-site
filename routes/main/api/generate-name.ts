@@ -1,7 +1,7 @@
-import { db } from "../../../db.ts";
-import { BaseHandler } from "../../base.ts";
+import { db } from "@makemy/core/db.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
 import { generate } from "random-words";
-import { authenticated } from "../../decorators/authenticated.ts";
+import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 
 const generateUniqueName = async (): Promise<string> => {
   let subdomain;

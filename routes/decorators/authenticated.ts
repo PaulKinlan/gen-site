@@ -1,5 +1,5 @@
 import { getCookies } from "@std/http/cookie";
-import { db } from "../../db.ts";
+import { db } from "../../core/db.ts";
 
 export function authenticated(options: { redirect: string }) {
   return function (

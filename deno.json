@@ -6,7 +6,8 @@
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.36.3",
     "@std/assert": "jsr:@std/assert@1",
     "@std/http": "jsr:@std/http@^1.0.13",
-    "random-words": "npm:random-words@^2.0.1"
+    "random-words": "npm:random-words@^2.0.1",
+    "@makemy/": "./"
   },
   "deploy": {
     "project": "d72e51f8-b44e-4b6b-b370-49aec83f42f5",
@@ -14,7 +15,6 @@
     "include": [],
     "entrypoint": "main.ts"
   },
-
   "compilerOptions": {
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

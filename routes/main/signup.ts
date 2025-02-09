@@ -1,7 +1,7 @@
-import { auth } from "../../auth.ts";
-import { db } from "../../db.ts";
-import { User } from "../../types.ts";
-import { BaseHandler } from "../base.ts";
+import { auth } from "@makemy/utils/auth.ts";
+import { db } from "@makemy/core/db.ts";
+import { User } from "@makemy/types.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
 
 const getTemplate = `<!DOCTYPE html>

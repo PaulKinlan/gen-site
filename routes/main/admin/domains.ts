@@ -1,7 +1,7 @@
-import { BaseHandler } from "../../base.ts";
-import { authenticated } from "../../decorators/authenticated.ts";
-import { db } from "../../../db.ts";
-import { CustomDomain } from "../../../types.ts";
+import { BaseHandler } from "@makemy/routes/base.ts";
+import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
+import { db } from "@makemy/core/db.ts";
+import { CustomDomain } from "@makemy/types.ts";
 
 const SAAS_DOMAINS_API_KEY = Deno.env.get("SAAS_DOMAINS_API_KEY");
 const ACCOUNT_UUID = Deno.env.get("SAAS_DOMAINS_ACCOUNT_UUID");

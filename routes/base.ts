@@ -1,4 +1,4 @@
-import { RequestHandler } from "../types.ts";
+import { RequestHandler } from "@makemy/types.ts";
 
 export class BaseHandler implements RequestHandler {
   async get(req: Request): Promise<Response> {

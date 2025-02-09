@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import { Route, ValidHTTPMethodForRoute } from "./types.ts";
+import { Route, ValidHTTPMethodForRoute } from "@makemy/types.ts";
 
 async function init() {
   const kv = await Deno.openKv();

@@ -1,8 +1,8 @@
-import { Cache } from "../../cache.ts";
+import { Cache } from "../../core/cache.ts";
 import { getContentType } from "../../utils/contentType.ts";
 import { getSiteFromHostname } from "../../utils/hostname.ts";
 import { isMediaFile } from "../../utils/contentType.ts";
-import { db } from "../../db.ts";
+import { db } from "../../core/db.ts";
 
 const ENV_SaasDomainsAuthToken = Deno.env.get("SAAS_DOMAINS_AUTH_TOKEN");
 

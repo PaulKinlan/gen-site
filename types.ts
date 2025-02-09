@@ -1,4 +1,4 @@
-import { CacheLine } from "./cache.ts";
+import { CacheLine } from "./core/cache.ts";
 
 export interface CustomDomain {
   uuid: string;
