@@ -25,8 +25,8 @@ async function init() {
   await crawlSitesUrls();
 
   Deno.cron(
-    "Schedule Extract Markdown Tasks every 10 minutes",
-    "*/10 * * * *",
+    "Schedule Extract Markdown Tasks every hour",
+    "0 * * * *",
     async () => {
       // Start the initial crawl and set up recurring crawl
       await crawlSitesUrls();
