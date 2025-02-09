@@ -169,6 +169,9 @@ Deno.serve(async (req: Request) => {
           pattern: new URLPattern({ hostname: "(.+).itsmy.blog" }),
           handler: (await import("./routes/subdomain/index.ts")).default,
         };
+        console.log(
+          `Using subdomain handler for: ${Host} - ${SaasDomainsAuthToken} --- ${ENV_SaasDomainsAuthToken}`
+        );
       } else {
         return new Response("Not Found", { status: 404 });
       }
