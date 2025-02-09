@@ -90,6 +90,11 @@ export const db = {
 
     for await (const res of result) {
       console.log(res);
+      if (res.key.length > 2) {
+        console.log("Invalid key", res.key);
+        await kv.delete(res.key);
+        continue;
+      }
       results[res.key[1] as string] = res.value;
     }
 

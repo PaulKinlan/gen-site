@@ -28,6 +28,10 @@ export async function initQueueHandler() {
     // Use type guard - then TypeScript compiler knows msg is a Notification
     if (isExtractMarkdown(msg)) {
       console.log(`Extracting markdown for ${msg.site} at ${msg.url}`);
+      if (!msg.url.startsWith("http")) {
+        console.error("Skipping Invalid URL:", msg.url);
+        return;
+      }
       const response = await fetch(msg.url);
       const html = await response.text();
       const markdown = extractMarkdown(html);
