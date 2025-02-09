@@ -48,11 +48,12 @@ function extractContentFromMarkdown(
 
 const additionalPromptForContentType: Record<string, string> = {
   html: `You must follow these rules when generating HTML content:
-+ Generate valid HTML5 content
++ Generate valid accessible HTML5 content
++ <meta name="generator" content="MakeMy.blog" />
 + Include semantic markup and ensure accessibility. 
 + Do not use inline CSS or <style> blocks, instead link to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
 + Prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.`,
-  css: "Generate clean, modern CSS. Use flex-box/grid where appropriate. Include responsive design considerations. Include light and dark mode.",
+  css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode.",
   js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
 };
 
