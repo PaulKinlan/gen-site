@@ -19,6 +19,72 @@ async function init() {
   }
 }
 
+const buildMainRoutes = async (hostname: string) => {
+  return [
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/signup",
+      }),
+      handler: (await import("./routes/main/signup.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/signin",
+      }),
+      handler: (await import("./routes/main/signin.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/admin/edit",
+      }),
+      handler: (await import("./routes/main/admin/edit.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/admin",
+      }),
+      handler: (await import("./routes/main/admin.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/admin/domains",
+      }),
+      handler: (await import("./routes/main/admin/domains.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/api/generate-name",
+      }),
+      handler: (await import("./routes/main/api/generate-name.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/api/check-name",
+      }),
+      handler: (await import("./routes/main/api/check-name.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
+        pathname: "/api/fetchMarkdown",
+      }),
+      handler: (await import("./routes/main/api/fetch-markdown.ts")).default,
+    },
+    {
+      // Catch all for the main site
+      pattern: new URLPattern({ hostname }),
+      handler: (await import("./routes/main/index.ts")).default,
+    },
+  ];
+};
+
 function isValidHTTPMethod(method: string): method is ValidHTTPMethodForRoute {
   const lowerCaseMethod = method.toLowerCase();
   return (
@@ -30,104 +96,8 @@ function isValidHTTPMethod(method: string): method is ValidHTTPMethodForRoute {
 }
 
 const routes: Route[] = [
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/signup",
-    }),
-    handler: (await import("./routes/main/signup.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/signup",
-    }),
-    handler: (await import("./routes/main/signup.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/signin",
-    }),
-    handler: (await import("./routes/main/signin.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/signin",
-    }),
-    handler: (await import("./routes/main/signin.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/admin/edit",
-    }),
-    handler: (await import("./routes/main/admin/edit.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/admin/edit",
-    }),
-    handler: (await import("./routes/main/admin/edit.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/admin",
-    }),
-    handler: (await import("./routes/main/admin.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/admin/domains",
-    }),
-    handler: (await import("./routes/main/admin/domains.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/admin",
-    }),
-    handler: (await import("./routes/main/admin.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/admin/domains",
-    }),
-    handler: (await import("./routes/main/admin/domains.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/api/generate-name",
-    }),
-    handler: (await import("./routes/main/api/generate-name.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/api/generate-name",
-    }),
-    handler: (await import("./routes/main/api/generate-name.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "localhost",
-      pathname: "/api/check-name",
-    }),
-    handler: (await import("./routes/main/api/check-name.ts")).default,
-  },
-  {
-    pattern: new URLPattern({
-      hostname: "makemy.blog",
-      pathname: "/api/check-name",
-    }),
-    handler: (await import("./routes/main/api/check-name.ts")).default,
-  },
+  ...(await buildMainRoutes("localhost")),
+  ...(await buildMainRoutes("makemy.blog")),
   {
     pattern: new URLPattern({ hostname: "localhost" }),
     handler: (await import("./routes/main/index.ts")).default,
@@ -135,10 +105,6 @@ const routes: Route[] = [
   {
     pattern: new URLPattern({ hostname: "0.0.0.0" }),
     handler: (await import("./routes/subdomain/index.ts")).default,
-  },
-  {
-    pattern: new URLPattern({ hostname: "makemy.blog" }),
-    handler: (await import("./routes/main/index.ts")).default,
   },
   {
     pattern: new URLPattern({ hostname: "(.+).itsmy.blog" }),
