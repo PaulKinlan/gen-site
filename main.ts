@@ -144,19 +144,34 @@ const routes: Route[] = [
     pattern: new URLPattern({ hostname: "(.+).itsmy.blog" }),
     handler: (await import("./routes/subdomain/index.ts")).default,
   },
+  {
+    pattern: new URLPattern({ hostname: "(.+).itsmy.blog" }),
+    handler: (await import("./routes/subdomain/index.ts")).default,
+  },
 ];
 
 await init();
 
+const ENV_SaasDomainsAuthToken = Deno.env.get("SAAS_DOMAINS_AUTH_TOKEN");
+
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
+  const SaasDomainsAuthToken = req.headers.get("X-SaaS-Domains-Auth-Token");
+  const Host = req.headers.get("Host");
 
   try {
-    const matchingRoute = routes.find((route) => route.pattern.test(url));
+    let matchingRoute = routes.find((route) => route.pattern.test(url));
 
     if (matchingRoute === undefined) {
       // No matching route. What do we do about static files
-      return new Response("Not Found", { status: 404 });
+      if (SaasDomainsAuthToken == ENV_SaasDomainsAuthToken) {
+        matchingRoute = {
+          pattern: new URLPattern({ hostname: "(.+).itsmy.blog" }),
+          handler: (await import("./routes/subdomain/index.ts")).default,
+        };
+      } else {
+        return new Response("Not Found", { status: 404 });
+      }
     }
 
     const method = req.method.toLowerCase();
