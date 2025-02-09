@@ -39,7 +39,7 @@ export function cache({ cache }: { cache: Cache }) {
         const site = await db.getSiteByDomain(servedForHeader);
         // We shouldn't be really looking in the DB here.... but there is no way to know the context yet.
         if (site) {
-          subdomain = servedForHeader;
+          subdomain = site.subdomain;
         }
       }
 
