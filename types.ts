@@ -1,34 +1,22 @@
 import { CacheLine } from "./cache.ts";
 
+export interface CustomDomain {
+  uuid: string;
+  host: string;
+  status: string;
+  tls_certificate_issued: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface Site {
   subdomain: string;
   prompt: string;
   userId: string;
+  customDomains?: CustomDomain[];
 }
 
-declare global {
-  // Add URLPattern types for TypeScript
-  interface URLPatternInit {
-    protocol?: string;
-    username?: string;
-    password?: string;
-    hostname?: string;
-    port?: string;
-    pathname?: string;
-    search?: string;
-    hash?: string;
-    baseURL?: string;
-  }
-
-  interface URLPattern {
-    test: (input: string | URL) => boolean;
-  }
-
-  var URLPattern: {
-    prototype: URLPattern;
-    new (init?: URLPatternInit): URLPattern;
-  };
-}
+// Using built-in Deno URLPattern types
 
 export interface User {
   id: string;

@@ -107,11 +107,25 @@ class SubdomainHandler extends BaseHandler {
   override async get(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const hostname = url.hostname;
-    const subdomain = getSiteFromHostname(hostname);
     const path = url.pathname;
     const contentType: SupportedContentType = getContentType(path);
 
-    const site = await db.getSite(subdomain);
+    // Check custom domain headers
+    const servedForHeader = req.headers.get("X-Served-For");
+    const saasDomainIp = req.headers.get("X-SaaS-Domains-IP");
+
+    let site: Site | null = null;
+    let siteId: string;
+
+    if (servedForHeader) {
+      // If served through custom domain proxy
+      site = await db.getSiteByDomain(servedForHeader);
+      siteId = servedForHeader;
+    } else {
+      // Regular subdomain access
+      siteId = getSiteFromHostname(hostname);
+      site = await db.getSite(siteId);
+    }
 
     if (!site) return new Response("Site not found", { status: 404 });
 
@@ -120,8 +134,8 @@ class SubdomainHandler extends BaseHandler {
       return new Response("Media files are not supported", { status: 400 });
     }
 
-    // Get previous requests for this subdomain
-    const previousRequests = (await cacheInstance.getMatching(subdomain)) ?? [];
+    // Get previous requests for this site
+    const previousRequests = (await cacheInstance.getMatching(siteId)) ?? [];
 
     const content = await generateSiteContent(
       path,

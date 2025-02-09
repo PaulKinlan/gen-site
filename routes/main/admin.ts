@@ -15,6 +15,7 @@ const template = (sites: Site[]) => {
           <p><a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
           <div class="flex gap-4">
             <a href="/admin/edit?subdomain=${site.subdomain}" class="text-blue-600 hover:text-blue-800">Edit</a>
+            <button onclick="manageDomains('${site.subdomain}')" class="text-blue-600 hover:text-blue-800">Domains</button>
             <button onclick="deleteSite('${site.subdomain}')" class="text-red-600 hover:text-red-800">Delete</button>
           </div>
         </div>
@@ -109,8 +110,119 @@ const template = (sites: Site[]) => {
         </div>
     </div>
 
+    <!-- Domain Management Modal -->
+    <div id="domain-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
+      <div class="flex min-h-full items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">Manage Custom Domains</h3>
+            <button onclick="closeDomainModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+          </div>
+          
+          <div id="domains-list" class="mb-4">
+            <!-- Domains will be listed here -->
+          </div>
+
+          <form id="add-domain-form" class="mb-4">
+            <div class="flex gap-2">
+              <input type="text" id="new-domain" placeholder="example.com" 
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <button type="submit" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Add Domain
+              </button>
+            </div>
+          </form>
+
+          <div class="text-sm text-gray-600">
+            <p class="mb-2">To connect your domain:</p>
+            <ol class="list-decimal list-inside space-y-1">
+              <li>Add your domain above</li>
+              <li>Create a APEX record pointing to <code>99.83.186.151</code> and <code>75.2.96.173.</code></li>
+              <li>Wait for DNS propagation (may take up to 24 hours)</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
     let checkNameTimeout;
+    let currentSubdomain;
+
+    async function manageDomains(subdomain) {
+      currentSubdomain = subdomain;
+      const modal = document.getElementById('domain-modal');
+      const domainsList = document.getElementById('domains-list');
+      modal.classList.remove('hidden');
+      
+      // Fetch and display domains
+      try {
+        const response = await fetch(\`/admin/domains?subdomain=\${subdomain}\`);
+        const { customDomains } = await response.json();
+        
+        domainsList.innerHTML = customDomains?.length 
+          ? customDomains.map(domain => \`
+              <div class="flex justify-between items-center p-2 border-b">
+                <div>
+                  <p class="font-medium">\${domain.host}</p>
+                  <p class="text-sm text-gray-500">Status: \${domain.status}</p>
+                </div>
+                <button onclick="removeDomain('\${domain.host}')" 
+                  class="text-red-600 hover:text-red-800">Remove</button>
+              </div>
+            \`).join('')
+          : '<p class="text-gray-500">No custom domains configured</p>';
+      } catch (error) {
+        console.error('Error fetching domains:', error);
+        domainsList.innerHTML = '<p class="text-red-500">Failed to load domains</p>';
+      }
+    }
+
+    function closeDomainModal() {
+      document.getElementById('domain-modal').classList.add('hidden');
+      currentSubdomain = null;
+    }
+
+    document.getElementById('add-domain-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('new-domain');
+      const domain = input.value.trim();
+      
+      if (!domain) return;
+      
+      try {
+        const response = await fetch('/admin/domains', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subdomain: currentSubdomain, domain })
+        });
+        
+        if (!response.ok) throw new Error(await response.text());
+        
+        input.value = '';
+        manageDomains(currentSubdomain); // Refresh the list
+      } catch (error) {
+        alert('Failed to add domain: ' + error.message);
+      }
+    });
+
+    async function removeDomain(host) {
+      if (!confirm('Are you sure you want to remove this domain?')) return;
+      
+      try {
+        const response = await fetch(\`/admin/domains?subdomain=\${currentSubdomain}&host=\${host}\`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error(await response.text());
+        
+        manageDomains(currentSubdomain); // Refresh the list
+      } catch (error) {
+        alert('Failed to remove domain: ' + error.message);
+      }
+    }
+
     
     async function checkNameAvailability(name) {
         const indicator = document.getElementById('availability-indicator');

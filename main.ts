@@ -81,10 +81,24 @@ const routes: Route[] = [
   },
   {
     pattern: new URLPattern({
+      hostname: "localhost",
+      pathname: "/admin/domains",
+    }),
+    handler: (await import("./routes/main/admin/domains.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
       hostname: "makemy.blog",
       pathname: "/admin",
     }),
     handler: (await import("./routes/main/admin.ts")).default,
+  },
+  {
+    pattern: new URLPattern({
+      hostname: "makemy.blog",
+      pathname: "/admin/domains",
+    }),
+    handler: (await import("./routes/main/admin/domains.ts")).default,
   },
   {
     pattern: new URLPattern({
