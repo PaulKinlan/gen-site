@@ -10,6 +10,9 @@ async function crawlSitesUrls() {
   // List all entries with the sites_urls prefix
   const entries = db.getAllUrlsToMonitor();
 
+  console.log(`Found ${Object.keys(entries).length} sites to crawl`);
+  console.log(entries);
+
   for (const [key, entry] of Object.entries(entries)) {
     console.log(`Processing ${key}, ${entry.length} URLs`);
     const [subdomain] = key;

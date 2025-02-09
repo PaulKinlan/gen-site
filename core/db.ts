@@ -89,7 +89,8 @@ export const db = {
     const results: UrlsForSite = {};
 
     for await (const res of result) {
-      results[res.key[2] as string] = res.value;
+      console.log(res);
+      results[res.key[1] as string] = res.value;
     }
 
     return results || [];
