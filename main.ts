@@ -1,5 +1,7 @@
 /// <reference lib="deno.ns" />
 import { Route, ValidHTTPMethodForRoute } from "@makemy/types.ts";
+import { crawlSitesUrls } from "@makemy/tasks/crawl-urls.ts";
+import { initQueueHandler } from "@makemy/queue.ts";
 
 async function init() {
   const kv = await Deno.openKv();
@@ -17,6 +19,19 @@ async function init() {
       });
     }
   }
+
+  // Start the initial crawl and set up recurring crawl
+  await initQueueHandler();
+  await crawlSitesUrls();
+
+  Deno.cron(
+    "Schedule Extract Markdown Tasks every 10 minutes",
+    "*/10 * * * *",
+    async () => {
+      // Start the initial crawl and set up recurring crawl
+      await crawlSitesUrls();
+    }
+  );
 }
 
 const buildMainRoutes = async (hostname: string) => {
@@ -73,7 +88,7 @@ const buildMainRoutes = async (hostname: string) => {
     {
       pattern: new URLPattern({
         hostname,
-        pathname: "/api/fetchMarkdown",
+        pathname: "/api/fetch-markdown",
       }),
       handler: (await import("./routes/main/api/fetch-markdown.ts")).default,
     },

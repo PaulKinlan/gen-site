@@ -71,7 +71,7 @@ async function generateSiteContent(
     ${site.prompt}
   </prompt>`;
 
-  const contextPrompt =
+  const previousRequestContext =
     context.previousRequests.length > 0
       ? `\n\nContext from previous requests:\n<files>${context.previousRequests
           .map((req) => {
@@ -81,8 +81,18 @@ async function generateSiteContent(
           .join("\n\n")}</files>`
       : "";
 
-  const prompt = `${basePrompt}${contextPrompt}
-  
+  const importedContext =
+    context.importedContext.length > 0
+      ? `\n\nImported context for @url referenceds:\n<importedContext>${context.importedContext
+          .map((ctx) => {
+            return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
+          })
+          .join("\n\n")}</importedContext>`
+      : "";
+
+  const prompt = `${basePrompt}
+${previousRequestContext}
+${importedContext}
 ${additionalPromptForContentType[contentType]} for path "${path}".`;
 
   console.log("Prompt:", prompt);
@@ -136,11 +146,14 @@ class SubdomainHandler extends BaseHandler {
 
     // Get previous requests for this site
     const previousRequests = (await cacheInstance.getMatching(siteId)) ?? [];
+    // Get the extacted markdown for @url syntax
+    const importedContext =
+      (await db.getAllExtractedMarkdown(site.subdomain)) ?? [];
 
     const content = await generateSiteContent(
       path,
       site,
-      { previousRequests },
+      { previousRequests, importedContext },
       contentType
     );
 

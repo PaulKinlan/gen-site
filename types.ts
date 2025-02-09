@@ -41,6 +41,7 @@ export type RequestHandler = {
 
 export interface RequestContext {
   previousRequests: CacheLine[];
+  importedContext: { url: string; markdown: string }[];
 }
 
 export type SupportedContentType =

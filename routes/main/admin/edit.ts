@@ -1,6 +1,6 @@
 import { BaseHandler } from "@makemy/routes/base.ts";
 import { Site } from "@makemy/types.ts";
-import { db } from "@makemy/core/db.ts";
+import { db, kv } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 
@@ -109,7 +109,7 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
 
 export default new (class extends BaseHandler {
   @authenticated({ redirect: "/login" })
-  async get(req: Request): Promise<Response> {
+  override async get(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const subdomain = url.searchParams.get("subdomain");
 
@@ -136,7 +136,7 @@ export default new (class extends BaseHandler {
   }
 
   @authenticated({ redirect: "/login" })
-  async post(req: Request): Promise<Response> {
+  override async post(req: Request): Promise<Response> {
     const baseUrl = new URL(req.url);
     let data: FormData | null = null;
     try {
@@ -164,11 +164,32 @@ export default new (class extends BaseHandler {
       };
 
       await db.createSite(site); // This will overwrite the existing site
+
+      // Process any @url directives in the prompt
+      const urlRegex = /@url\s+(\S+)/g;
+      let match;
+      while ((match = urlRegex.exec(prompt)) !== null) {
+        const url = match[1];
+        try {
+          // Validate URL
+          new URL(url);
+          // Store URL and queue task
+          await db.addUrlToMontior(subdomain, url, prompt);
+          // Instantly check
+          await kv.enqueue(
+            { site: subdomain, url },
+            { delay: 0 } // 1 hour delay
+          );
+        } catch (urlError) {
+          console.error(`Invalid URL in prompt: ${url}`);
+        }
+      }
+
       baseUrl.pathname = "/admin";
       return Response.redirect(baseUrl, 303);
     } catch (error) {
       const site = await db.getSite("");
-      return new Response(template(site, error.message), {
+      return new Response(template(site, (error as Error).message), {
         status: 400,
         headers: { "Content-Type": "text/html" },
       });

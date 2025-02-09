@@ -1,6 +1,6 @@
 import { BaseHandler } from "@makemy/routes/base.ts";
 import { Site } from "@makemy/types.ts";
-import { db } from "@makemy/core/db.ts";
+import { db, kv } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { generatePrompt } from "@makemy/routes/main/admin/resources/prompts.ts";
@@ -333,6 +333,23 @@ export default new (class extends BaseHandler {
       };
 
       await db.createSite(site);
+
+      // Process any @url directives in the prompt
+      const urlRegex = /@url\s+(\S+)/g;
+      let match;
+      while ((match = urlRegex.exec(prompt)) !== null) {
+        const url = match[1];
+        try {
+          // Validate URL
+          new URL(url);
+          // Store URL and queue task
+          await db.addUrlToMontior(subdomain, url, prompt);
+          // Instantly enqueue the task, it will be check later
+          await kv.enqueue({ site: subdomain, url }, { delay: 0 });
+        } catch (error) {
+          console.error(`Invalid URL in prompt: ${url}`);
+        }
+      }
       return Response.redirect(req.url, 303);
     } catch (error) {
       return new Response((error as Error).message, { status: 400 });
