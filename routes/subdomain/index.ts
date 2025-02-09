@@ -47,8 +47,7 @@ function extractContentFromMarkdown(
 }
 
 const additionalPromptForContentType: Record<string, string> = {
-  html: `You must follow these rules when generating HTML content:
-+ Generate valid accessible HTML5 content
+  html: `+ Generate valid accessible HTML5 content
 + <meta name="generator" content="MakeMy.blog" />
 + Include semantic markup and ensure accessibility. 
 + Do not use inline CSS or <style> blocks, instead link to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
@@ -98,7 +97,7 @@ async function generateSiteContent(
   const prompt = `${basePrompt}
 ${previousRequestContext}
 ${importedContext}
-${additionalPromptForContentType[contentType]} for path "${path}".`;
+For the URL pathname '${path}' create a ${contentType} file that follows these rules: ' ${additionalPromptForContentType[contentType]}`;
 
   console.log("Prompt:", prompt);
 
