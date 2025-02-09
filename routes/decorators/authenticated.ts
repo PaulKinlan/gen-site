@@ -14,8 +14,6 @@ export function authenticated(options: { redirect: string }) {
       const { auth, session } = getCookies(req.headers);
       const redirectUrl = new URL(req.url);
       redirectUrl.pathname = options.redirect;
-      console.log(auth);
-      console.log(session);
 
       // If there is no auth token
       if (!auth) {
@@ -29,7 +27,6 @@ export function authenticated(options: { redirect: string }) {
       }
 
       const userId = await db.getSession(session);
-      console.log("user id", userId);
 
       if (!userId) {
         console.log("No user id for sessions, user could be logged out");

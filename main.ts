@@ -140,8 +140,6 @@ Deno.serve(async (req: Request) => {
   const SaasDomainsAuthToken = req.headers.get("X-SaaS-Domains-Auth-Token");
   const Host = req.headers.get("Host");
 
-  console.log(req.headers);
-
   try {
     let matchingRoute = routes.find((route) => route.pattern.test(url));
 

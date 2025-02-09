@@ -91,16 +91,11 @@ export default new (class extends BaseHandler {
     const adminUrl = url.toString();
     // Check to see if the credentials are correct.
     const formData = await req.formData();
-    console.log(formData);
     const username = formData.get("username");
     const password = formData.get("password");
 
-    console.log(username);
-
     const user = await db.getUserByUsername(username as string);
     const submittedPasswordHash = await auth.hashPassword(password as string);
-
-    console.log(user);
 
     if (user?.passwordHash != submittedPasswordHash) {
       return new Response("Invalid credentials", { status: 401 });
