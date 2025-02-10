@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { BaseHandler } from "@makemy/routes/base.ts";
 import { Site, RequestContext, SupportedContentType } from "@makemy/types.ts";
+import { getLLMProvider } from "@makemy/llms/factory.ts";
 import { db } from "@makemy/core/db.ts";
 import { Cache } from "@makemy/core/cache.ts";
 import { getContentType, isMediaFile } from "@makemy/utils/contentType.ts";
@@ -13,17 +13,6 @@ cacheInstance.init().catch((e) => {
   console.error("Failed to initialize cache:", e);
   throw e;
 });
-
-const MODEL = "claude-3-5-sonnet-20241022";
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-let systemError;
-
-const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-
-if (ANTHROPIC_API_KEY == undefined) {
-  console.error("Please set the ANTHROPIC_API_KEY environment variable");
-  systemError = "Please set the ANTHROPIC_API_KEY environment variable";
-}
 
 function extractContentFromMarkdown(
   text: string,
@@ -101,19 +90,9 @@ For the URL pathname '${path}' create a ${contentType} file that follows these r
 
   console.log("Prompt:", prompt);
 
-  // TODO: think about system / user roles.
-  const message = await anthropic.messages.create({
-    max_tokens: 8192,
-    messages: [{ role: "user", content: prompt }],
-    model: MODEL,
-  });
-
-  // TODO: Implement Claude/AI integration
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Expected text content from Claude");
-  }
-  return extractContentFromMarkdown(content.text, contentType);
+  const llmProvider = getLLMProvider();
+  const response = await llmProvider.generate(prompt);
+  return extractContentFromMarkdown(response, contentType);
 }
 
 class SubdomainHandler extends BaseHandler {

@@ -1,33 +1,33 @@
 import { LLMProvider } from "@makemy/llms/base.ts";
 
-export class ClaudeProvider implements LLMProvider {
+export class OpenAIProvider implements LLMProvider {
   private apiKey: string;
 
   constructor() {
-    this.apiKey = Deno.env.get("ANTHROPIC_API_KEY") || "";
+    this.apiKey = Deno.env.get("OPENAI_API_KEY") || "";
   }
 
   async generate(prompt: string): Promise<string> {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 8192,
+        model: "gpt-4-turbo-preview",
         messages: [
           {
             role: "user",
             content: prompt,
           },
         ],
+        temperature: 0.7,
+        max_tokens: 4096,
       }),
     });
 
     const data = await response.json();
-    return data.content[0].text;
+    return data.choices[0].message.content;
   }
 }
