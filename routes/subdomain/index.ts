@@ -175,7 +175,6 @@ async function generateSiteContent(
     context.previousRequests.length > 0
       ? `\n\nContext from previous requests:\n<files>${context.previousRequests
           .map((req) => {
-            console.log("REQUEST", req);
             return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
           })
           .join("\n\n")}</files>`
@@ -189,8 +188,6 @@ async function generateSiteContent(
           })
           .join("\n\n")}</importedContext>`
       : "";
-
-  console.log(`Imported Context: ${importedContext}`);
 
   const prompt = `${basePrompt}
 ${previousRequestContext}
