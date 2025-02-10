@@ -5,6 +5,7 @@ const imageExtensions = new Set([
   ".jpg",
   ".jpeg",
   ".png",
+  ".webp",
   //".gif",
   //".ico", We do not generate icons - specifically favicons
   //".svg",
