@@ -1,4 +1,4 @@
-import { LLMProvider } from "@makemy/llms/base.ts";
+import { LLMInput, LLMProvider } from "@makemy/llms/base.ts";
 
 export class OpenAIProvider implements LLMProvider {
   private apiKey: string;
@@ -7,7 +7,10 @@ export class OpenAIProvider implements LLMProvider {
     this.apiKey = Deno.env.get("OPENAI_API_KEY") || "";
   }
 
-  async generate(prompt: string): Promise<string> {
+  async generate(prompt: LLMInput): Promise<string> {
+    const messages = prompt.system.map((p) => {
+      return { role: "user", content: p };
+    });
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -16,12 +19,7 @@ export class OpenAIProvider implements LLMProvider {
       },
       body: JSON.stringify({
         model: "gpt-4-turbo-preview",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
+        messages,
         temperature: 0.7,
         max_tokens: 4096,
       }),

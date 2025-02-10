@@ -1,9 +1,12 @@
-import { ImageGenerationContext } from "@makemy/types.ts";
+export type LLMInput = {
+  system: string[];
+  files: string[]; // The files that are being referenced
+  context: string[]; // The context that is being imported (i.e, @url)
+  prompt: string;
+};
 
 export interface LLMProvider {
-  generate(prompt: string): Promise<string>;
-  generateImage?(context: ImageGenerationContext): Promise<string>;
-  supportsImageGeneration?(): boolean;
+  generate(prompt: LLMInput): Promise<string>;
 }
 
 export type SupportedLLMProvider = "claude" | "gemini" | "groq" | "openai";

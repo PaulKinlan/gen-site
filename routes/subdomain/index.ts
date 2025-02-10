@@ -6,7 +6,7 @@ import {
   ImageGenerationContext,
   UnsupportedContentType,
 } from "@makemy/types.ts";
-import { UnsupportedOperationError } from "@makemy/llms/base.ts";
+import { UnsupportedOperationError, LLMInput } from "@makemy/llms/base.ts";
 import { getLLMProvider } from "@makemy/llms/factory.ts";
 import { db } from "@makemy/core/db.ts";
 import { Cache } from "@makemy/core/cache.ts";
@@ -163,7 +163,7 @@ async function generateSiteContent(
 ): Promise<string> {
   const basePrompt = `You are an AI content generator that creates web content for the following site based on the context in the <prompt> tags.
 
-  You will have access to the content of the previous requests in the <files> tag, with each <file> representing a different path on the site.
+  You will have access to the content of the previous requests in the <file> tags, with each <file> representing a different path on the site.
 
   You will also have access to the extracted context from the imported URLs in the <importedContext> tag, with each <context> representing a different URL that the user would you to reference.
   
@@ -171,30 +171,20 @@ async function generateSiteContent(
     ${site.prompt}
   </prompt>`;
 
-  const previousRequestContext =
-    context.previousRequests.length > 0
-      ? `\n\nContext from previous requests:\n<files>${context.previousRequests
-          .map((req) => {
-            return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
-          })
-          .join("\n\n")}</files>`
-      : "";
+  const previousRequestContext = context.previousRequests.map((req) => {
+    return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
+  });
 
-  const importedContext =
-    context.importedContext.length > 0
-      ? `\n\nImported context for @url references\n<importedContext>${context.importedContext
-          .map((ctx) => {
-            return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
-          })
-          .join("\n\n")}</importedContext>`
-      : "";
+  const importedContext = context.importedContext.map((ctx) => {
+    return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
+  });
 
-  const prompt = `${basePrompt}
-${previousRequestContext}
-${importedContext}
-For the URL pathname '${path}' create a ${contentType} file that follows these rules: ' ${additionalPromptForContentType[contentType]}`;
-
-  console.log("Prompt:", prompt);
+  const prompt: LLMInput = {
+    system: [basePrompt],
+    files: previousRequestContext,
+    context: importedContext,
+    prompt: `For the URL pathname '${path}' create a ${contentType} file that follows these rules: ' ${additionalPromptForContentType[contentType]}`,
+  };
 
   const llmProvider = getLLMProvider();
   const response = await llmProvider.generate(prompt);
