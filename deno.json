@@ -4,11 +4,14 @@
   },
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.36.3",
+    "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.49",
     "@std/assert": "jsr:@std/assert@1",
+    "@std/encoding": "jsr:@std/encoding@^1.0.7",
     "@std/http": "jsr:@std/http@^1.0.13",
     "cheerio": "npm:cheerio@^1.0.0",
     "random-words": "npm:random-words@^2.0.1",
     "@makemy/": "./",
+    "replicate": "npm:replicate@^1.0.1",
     "turndown": "npm:turndown@^7.2.0"
   },
   "deploy": {

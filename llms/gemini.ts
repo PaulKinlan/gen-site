@@ -1,6 +1,8 @@
-import { LLMProvider } from "@makemy/llms/base.ts";
+import { LLMProvider, UnsupportedOperationError } from "@makemy/llms/base.ts";
+import { ImageGenerationContext } from "@makemy/types.ts";
 
-const MODEL = "gemini-2.0-flash";
+const TEXT_MODEL = "gemini-2.0-flash";
+const IMAGE_MODEL = "gemini-pro-vision";
 export class GeminiProvider implements LLMProvider {
   private apiKey: string;
 
@@ -10,7 +12,7 @@ export class GeminiProvider implements LLMProvider {
 
   async generate(prompt: string): Promise<string> {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1/models/${TEXT_MODEL}:generateContent`,
       {
         method: "POST",
         headers: {

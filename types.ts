@@ -49,7 +49,19 @@ export type SupportedContentType =
   | "css"
   | "js"
   | "media"
-  | "javascript";
+  | "javascript"
+  | "image";
+
+export type UnsupportedContentType = "unsupported";
+
+export interface ImageGenerationContext {
+  path: string;
+  prompt: string;
+  style?: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+}
 
 declare global {
   // Keep URLPattern declaration at top level

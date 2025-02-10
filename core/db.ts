@@ -1,5 +1,5 @@
 /// <reference lib="deno.unstable" />
-import { Site, User, CustomDomain } from "../types.ts";
+import { Site, User, CustomDomain, ImageGenerationContext } from "../types.ts";
 
 const kv = await Deno.openKv();
 
@@ -81,6 +81,31 @@ export const db = {
     const uniqueUrls = Array.from(urlSet);
 
     await kv.set(["sites_urls", subdomain], uniqueUrls);
+  },
+
+  async addSiteImageInformation(
+    subdomain: string,
+    context: ImageGenerationContext
+  ) {
+    const site = await this.getSite(subdomain);
+    if (!site) throw new Error("Site not found");
+
+    console.log("Site images for", subdomain, context.path, context);
+
+    await kv.set(["sites_images", subdomain, context.path], context);
+  },
+
+  async getSiteImageInformation(
+    subdomain: string,
+    path: string
+  ): Promise<ImageGenerationContext | null> {
+    const site = await this.getSite(subdomain);
+    if (!site) throw new Error("Site not found");
+
+    console.log("Site images for", subdomain, path);
+
+    return (await kv.get(["sites_images", subdomain, path]))
+      .value as ImageGenerationContext;
   },
 
   async getAllUrlsToMonitor(): Promise<UrlsForSite> {

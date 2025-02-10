@@ -1,32 +1,40 @@
 import path from "npm:path";
-import { SupportedContentType } from "../types.ts";
+import { SupportedContentType, UnsupportedContentType } from "../types.ts";
 
-const mediaExtensions = new Set([
+const imageExtensions = new Set([
   ".jpg",
   ".jpeg",
   ".png",
-  ".gif",
-  ".ico",
-  ".svg",
-  ".mp4",
-  ".webm",
-  ".ogg",
-  ".mp3",
-  ".wav",
+  //".gif",
+  //".ico", We do not generate icons - specifically favicons
+  //".svg",
 ]);
+
+const mediaExtensions = new Set([".mp4", ".webm", ".ogg", ".mp3", ".wav"]);
 
 export function isMediaFile(url: string): boolean {
   const extension = path.extname(url).toLowerCase();
-  return mediaExtensions.has(extension);
+  return mediaExtensions.has(extension) || imageExtensions.has(extension);
 }
 
-export function getContentType(url: string): SupportedContentType {
+export function isImageFile(url: string): boolean {
+  const extension = path.extname(url).toLowerCase();
+  return imageExtensions.has(extension);
+}
+
+export function getContentType(
+  url: string
+): SupportedContentType | UnsupportedContentType {
+  if (isImageFile(url)) {
+    return "image";
+  }
   if (isMediaFile(url)) {
     return "media";
   }
 
   const extension = path.extname(url).toLowerCase();
   switch (extension) {
+    case "":
     case ".html":
       return "html";
     case ".css":
@@ -34,7 +42,7 @@ export function getContentType(url: string): SupportedContentType {
     case ".js":
       return "js";
     default:
-      return "html"; // Default to HTML if no extension
+      return "unsupported"; // Default to HTML if no extension
   }
 }
 
