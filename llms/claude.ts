@@ -20,8 +20,12 @@ export class ClaudeProvider implements LLMProvider {
   }
 
   async generate(prompt: LLMInput): Promise<string> {
+    let cacheControlCount = 0;
     const system: SystemMessage[] = prompt.system.map((p) => {
-      return { type: "text", text: p, cache_control: { type: "ephemeral" } };
+      const cache_control =
+        cacheControlCount <= 4 ? { type: "ephemeral" } : undefined;
+      cacheControlCount++;
+      return { type: "text", text: p, cache_control };
     });
 
     system.push({
@@ -31,7 +35,10 @@ export class ClaudeProvider implements LLMProvider {
 
     system.push(
       ...prompt.files.map((f) => {
-        return { type: "text", text: f, cache_control: { type: "ephemeral" } };
+        const cache_control =
+          cacheControlCount < 4 ? { type: "ephemeral" } : undefined;
+        cacheControlCount++;
+        return { type: "text", text: f, cache_control };
       })
     );
 
@@ -42,7 +49,10 @@ export class ClaudeProvider implements LLMProvider {
 
     system.push(
       ...prompt.context.map((c) => {
-        return { type: "text", text: c, cache_control: { type: "ephemeral" } };
+        const cache_control =
+          cacheControlCount <= 4 ? { type: "ephemeral" } : undefined;
+        cacheControlCount++;
+        return { type: "text", text: c, cache_control };
       })
     );
 

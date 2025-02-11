@@ -1,8 +1,7 @@
 import { Cache } from "@makemy/core/cache.ts";
-import { getContentType } from "@makemy/utils/contentType.ts";
 import { getSiteFromHostname } from "@makemy/utils/hostname.ts";
-import { isMediaFile } from "@makemy/utils/contentType.ts";
 import { db } from "@makemy/core/db.ts";
+import { isMediaFile } from "@makemy/utils/contentType.ts";
 
 const ENV_SaasDomainsAuthToken = Deno.env.get("SAAS_DOMAINS_AUTH_TOKEN");
 
@@ -19,6 +18,8 @@ export function cache({ cache }: { cache: Cache }) {
       const url = new URL(req.url);
       const hostname = url.hostname;
       let subdomain = getSiteFromHostname(hostname);
+
+      const isMedia = isMediaFile(url.pathname);
 
       if (subdomain === undefined) {
         return new Response("Subdomain not found", { status: 404 });
@@ -55,6 +56,12 @@ export function cache({ cache }: { cache: Cache }) {
       // Only cache successful responses
       if (response.status === 200) {
         console.log("Caching response for", subdomain, req.url);
+        if (isMedia == false) {
+          // remove this later date
+          const path = url.pathname;
+          const cacheKey = [subdomain, path];
+          cache.set(cacheKey, ""); // The old cache is now just so we know candidate previous requests (wait until matchAll is avaliable)
+        }
         await subdomainCache.put(req, response.clone());
       }
 

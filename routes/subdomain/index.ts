@@ -19,6 +19,7 @@ import { getSiteFromHostname } from "@makemy/utils/hostname.ts";
 import { cache } from "@makemy/routes/decorators/cache.ts";
 import { getImageGenerationProvider } from "@makemy/image-gen/factory.ts";
 import { DOMParser } from "jsr:@b-fuze/deno-dom";
+import { CacheLine } from "@makemy/core/cache.ts";
 
 const cacheInstance = new Cache();
 // Initialize the cache immediately
@@ -171,9 +172,11 @@ async function generateSiteContent(
     ${site.prompt}
   </prompt>`;
 
-  const previousRequestContext = context.previousRequests.map((req) => {
-    return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
-  });
+  const previousRequestContext = context.previousRequests
+    .filter((req) => isMediaFile(req.path) === false) // no media files.
+    .map((req) => {
+      return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
+    });
 
   const importedContext = context.importedContext.map((ctx) => {
     return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
@@ -237,8 +240,39 @@ class SubdomainHandler extends BaseHandler {
     }
 
     // Get previous requests for this site
-    const previousRequests = (await cacheInstance.getMatching(siteId)) ?? [];
-    // Get the extacted markdown for @url syntax
+    const previousRequestsOld: CacheLine[] =
+      (await cacheInstance.getMatching(site.subdomain)) ?? [];
+
+    const previousRequests: CacheLine[] = [];
+    const cache = await caches.open(site.subdomain);
+    for (const previousRequest of previousRequestsOld) {
+      const urlToMatch = url;
+      urlToMatch.pathname = previousRequest.path;
+      const match = await cache.match(urlToMatch);
+      const value = await match?.text();
+      previousRequests.push({
+        path: previousRequest.path,
+        value: {
+          content: value || "",
+          timestamp: previousRequest.value.timestamp,
+        },
+      });
+    }
+    // const cache = await caches.open(site.subdomain);
+    // const cachedRequests = await cache.matchAll();
+    // for (const cachedRequest of cachedRequests) {
+    //   const cacheLine: CacheLine = {
+    //     path: cachedRequest.url,
+    //     value: {
+    //       content: await cachedRequest.text(),
+    //       timestamp: Date.now(),
+    //     },
+    //   };
+
+    //   previousRequests.push(cacheLine);
+    // }
+
+    // Get the extracted markdown for @url syntax
     const importedContext =
       (await db.getAllExtractedMarkdown(site.subdomain)) ?? [];
 

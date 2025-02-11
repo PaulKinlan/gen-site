@@ -27,10 +27,10 @@ export class Cache {
       throw new Error("Cache not initialized. Call init() first.");
     }
     const entry: CacheEntry = {
-      content: value,
+      content: "using cache API",
       timestamp: Date.now(),
     };
-    await this.kv.set([this.PREFIX, ...key], entry, { expireIn: this.TTL });
+    await this.kv.set([this.PREFIX, ...key], entry);
   }
 
   async get(key: string[]): Promise<string | null> {
@@ -41,12 +41,7 @@ export class Cache {
 
     if (!result.value) return null;
 
-    if (Date.now() - result.value.timestamp > this.TTL) {
-      await this.kv.delete([this.PREFIX, ...key]);
-      return null;
-    }
-
-    return result.value.content;
+    return result.value.value.content;
   }
 
   async getMatching(origin: string): Promise<CacheLine[] | null> {
@@ -62,11 +57,14 @@ export class Cache {
     const matchingResponses: CacheLine[] = [];
 
     for await (const res of iter) {
+      console.log("res", res);
       matchingResponses.push({
         path: res.key.slice(2).join("/"),
         value: res.value,
       });
     }
+
+    console.log(matchingResponses);
 
     return matchingResponses;
   }

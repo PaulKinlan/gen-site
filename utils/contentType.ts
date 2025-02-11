@@ -6,6 +6,16 @@ const imageExtensions = new Set([
   ".jpeg",
   ".png",
   ".webp",
+  ".gif",
+  ".ico",
+  ".svg",
+]);
+
+const supportedImageExtensions = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
   //".gif",
   //".ico", We do not generate icons - specifically favicons
   //".svg",
@@ -18,6 +28,18 @@ export function isMediaFile(url: string): boolean {
   return mediaExtensions.has(extension) || imageExtensions.has(extension);
 }
 
+export function isSupportedMediaFile(url: string): boolean {
+  const extension = path.extname(url).toLowerCase();
+  return (
+    mediaExtensions.has(extension) || supportedImageExtensions.has(extension)
+  );
+}
+
+export function isSupportedImageFile(url: string): boolean {
+  const extension = path.extname(url).toLowerCase();
+  return supportedImageExtensions.has(extension);
+}
+
 export function isImageFile(url: string): boolean {
   const extension = path.extname(url).toLowerCase();
   return imageExtensions.has(extension);
@@ -26,7 +48,7 @@ export function isImageFile(url: string): boolean {
 export function getContentType(
   url: string
 ): SupportedContentType | UnsupportedContentType {
-  if (isImageFile(url)) {
+  if (isSupportedImageFile(url)) {
     return "image";
   }
   if (isMediaFile(url)) {
