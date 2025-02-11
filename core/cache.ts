@@ -91,3 +91,10 @@ export class Cache {
     await this.kv.delete([this.PREFIX, key]);
   }
 }
+
+export const cacheInstance = new Cache();
+// Initialize the cache immediately
+cacheInstance.init().catch((e) => {
+  console.error("Failed to initialize cache:", e);
+  throw e;
+});

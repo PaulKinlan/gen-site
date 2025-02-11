@@ -19,7 +19,7 @@ async function crawlSitesUrls() {
       if (typeof subdomain === "string" && typeof url === "string") {
         // Queue a new task to process this URL
         await kv.enqueue(
-          { site: subdomain, url },
+          { message: "extract-markdown", site: subdomain, url },
           { delay: 0 } // No delay for cron job execution
         );
         console.log(`Queued task for ${url} (${subdomain})`);

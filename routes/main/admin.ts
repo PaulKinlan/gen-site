@@ -351,11 +351,20 @@ export default new (class extends BaseHandler {
           // Store URL and queue task
           await db.addUrlToMonitor(subdomain, url);
           // Instantly enqueue the task, it will be check later
-          await kv.enqueue({ site: subdomain, url }, { delay: 0 });
+          await kv.enqueue(
+            { message: "extract-markdown", site: subdomain, url },
+            { delay: 0 }
+          );
         } catch (error) {
           console.error(`Invalid URL in prompt: ${url}, ${error}`);
         }
       }
+
+      // regenerate the site so the first load is quicker
+      await kv.enqueue(
+        { message: "generate-site", site },
+        { delay: 0 } // 1 hour delay
+      );
       return Response.redirect(req.url, 303);
     } catch (error) {
       return new Response((error as Error).message, { status: 400 });
