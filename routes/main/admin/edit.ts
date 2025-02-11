@@ -3,6 +3,7 @@ import { Site } from "@makemy/types.ts";
 import { db } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
+import { clearCacheForSite } from "@makemy/core/cache.ts";
 
 const kv = await Deno.openKv();
 
@@ -166,6 +167,9 @@ export default new (class extends BaseHandler {
       };
 
       await db.createSite(site); // This will overwrite the existing site
+
+      // We should update the cache so that old assets aren't served
+      await clearCacheForSite(site);
 
       // Process any @url directives in the prompt
       const urlRegex = /@url\s+(\S+)/g;

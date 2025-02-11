@@ -1,3 +1,18 @@
+import { Site } from "@makemy/types.ts";
+
+/*
+  Deno Cache API utility functions
+
+*/
+export async function clearCacheForSite(site: Site): Promise<boolean> {
+  // This will use the deno cache API to delete all cache entries for a site
+  return await caches.delete(site.subdomain);
+}
+
+/*
+Legacy Cache class
+*/
+
 interface CacheEntry {
   content: string;
   timestamp: number;

@@ -4,6 +4,7 @@ import { db } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { generatePrompt } from "@makemy/routes/main/admin/resources/prompts.ts";
+import { clearCacheForSite } from "@makemy/core/cache.ts";
 
 const kv = await Deno.openKv();
 
@@ -335,6 +336,9 @@ export default new (class extends BaseHandler {
       };
 
       await db.createSite(site);
+
+      // We should update the cache.
+      await clearCacheForSite(site);
 
       // Process any @url directives in the prompt
       const urlRegex = /@url\s+(\S+)/g;
