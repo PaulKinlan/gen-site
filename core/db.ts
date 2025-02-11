@@ -67,7 +67,7 @@ export const db = {
     await atomic.commit();
   },
 
-  async addUrlToMontior(subdomain: string, url: string) {
+  async addUrlToMonitor(subdomain: string, url: string) {
     const site = await this.getSite(subdomain);
     if (!site) throw new Error("Site not found");
 

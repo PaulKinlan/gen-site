@@ -176,7 +176,7 @@ export default new (class extends BaseHandler {
           // Validate URL
           new URL(url);
           // Store URL and queue task
-          await db.addUrlToMontior(subdomain, url);
+          await db.addUrlToMonitor(subdomain, url);
           // Instantly check
           await kv.enqueue(
             { site: subdomain, url },
