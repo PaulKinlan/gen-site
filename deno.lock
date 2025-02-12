@@ -21,9 +21,14 @@
     "jsr:@std/path@^1.0.8": "1.0.8",
     "jsr:@std/path@~0.213.1": "0.213.1",
     "jsr:@std/streams@^1.0.9": "1.0.9",
+    "jsr:@victr/htmlparser2@^9.1.0": "9.1.0",
     "npm:@anthropic-ai/sdk@~0.36.3": "0.36.3",
     "npm:cheerio@*": "1.0.0",
     "npm:cheerio@1": "1.0.0",
+    "npm:domelementtype@^2.3.0": "2.3.0",
+    "npm:domhandler@^5.0.3": "5.0.3",
+    "npm:domutils@^3.1.0": "3.2.2",
+    "npm:entities@5": "5.0.0",
     "npm:path@*": "0.12.7",
     "npm:random-words@^2.0.1": "2.0.1",
     "npm:replicate@^1.0.1": "1.0.1",
@@ -113,6 +118,15 @@
     },
     "@std/streams@1.0.9": {
       "integrity": "a9d26b1988cdd7aa7b1f4b51e1c36c1557f3f252880fa6cc5b9f37078b1a5035"
+    },
+    "@victr/htmlparser2@9.1.0": {
+      "integrity": "4c8f4987fec24a0e61a762dbede4a79891e6266c5f6737b5277b017551bbda56",
+      "dependencies": [
+        "npm:domelementtype",
+        "npm:domhandler",
+        "npm:domutils",
+        "npm:entities"
+      ]
     }
   },
   "npm": {
@@ -232,7 +246,7 @@
       "dependencies": [
         "domelementtype",
         "domhandler",
-        "entities"
+        "entities@4.5.0"
       ]
     },
     "domelementtype@2.3.0": {
@@ -261,6 +275,9 @@
     },
     "entities@4.5.0": {
       "integrity": "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="
+    },
+    "entities@5.0.0": {
+      "integrity": "sha512-BeJFvFRJddxobhvEdm5GqHzRV/X+ACeuw0/BuuxsCh1EUZcAIz8+kYmBp/LrQuloy6K1f3a0M7+IhmZ7QnkISA=="
     },
     "event-target-shim@5.0.1": {
       "integrity": "sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ=="
@@ -292,7 +309,7 @@
         "domelementtype",
         "domhandler",
         "domutils",
-        "entities"
+        "entities@4.5.0"
       ]
     },
     "humanize-ms@1.2.1": {
@@ -356,7 +373,7 @@
     "parse5@7.2.1": {
       "integrity": "sha512-BuBYQYlv1ckiPdQi/ohiivi9Sagc9JG+Ozs0r7b/0iK3sKmrb0b9FdWdBbOdx6hBCM/F9Ir82ofnBhtZOjCRPQ==",
       "dependencies": [
-        "entities"
+        "entities@4.5.0"
       ]
     },
     "path@0.12.7": {
@@ -483,6 +500,7 @@
       "jsr:@std/assert@1",
       "jsr:@std/encoding@^1.0.7",
       "jsr:@std/http@^1.0.13",
+      "jsr:@victr/htmlparser2@^9.1.0",
       "npm:@anthropic-ai/sdk@~0.36.3",
       "npm:cheerio@1",
       "npm:random-words@^2.0.1",

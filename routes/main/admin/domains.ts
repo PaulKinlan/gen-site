@@ -12,7 +12,6 @@ if (!SAAS_DOMAINS_API_KEY || !ACCOUNT_UUID || !UPSTREAM_UUID) {
 }
 
 async function createCustomDomain(host: string): Promise<CustomDomain> {
-  console.log(ACCOUNT_UUID, UPSTREAM_UUID, SAAS_DOMAINS_API_KEY);
   const response = await fetch(
     `https://app.saascustomdomains.com/api/v1/accounts/${ACCOUNT_UUID}/upstreams/${UPSTREAM_UUID}/custom_domains`,
     {

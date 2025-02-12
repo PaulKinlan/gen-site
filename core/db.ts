@@ -90,8 +90,6 @@ export const db = {
     const site = await this.getSite(subdomain);
     if (!site) throw new Error("Site not found");
 
-    console.log("Site images for", subdomain, context.path, context);
-
     await kv.set(["sites_images", subdomain, context.path], context);
   },
 
@@ -101,8 +99,6 @@ export const db = {
   ): Promise<ImageGenerationContext | null> {
     const site = await this.getSite(subdomain);
     if (!site) throw new Error("Site not found");
-
-    console.log("Site images for", subdomain, path);
 
     return (await kv.get(["sites_images", subdomain, path]))
       .value as ImageGenerationContext;
@@ -114,7 +110,6 @@ export const db = {
     const results: UrlsForSite = {};
 
     for await (const res of result) {
-      console.log(res);
       if (res.key.length > 2) {
         console.log("Invalid key", res.key);
         await kv.delete(res.key);

@@ -9,6 +9,8 @@ import {
 } from "@makemy/types.ts";
 import { isMediaFile } from "@makemy/utils/contentType.ts";
 import { DOMParser } from "jsr:@b-fuze/deno-dom";
+import * as htmlparser2 from "@victr/htmlparser2";
+import subdomain from "@makemy/routes/subdomain/index.ts";
 // Site generation helper
 
 export const additionalPromptForContentType: Record<string, string> = {
@@ -69,6 +71,96 @@ async function processGeneratedImages(
   return doc.documentElement.outerHTML;
 }
 
+async function parseHtmlStreamForGeneratedImages(
+  stream: ReadableStream<Uint8Array>
+): Promise<ImageGenerationContext[]> {
+  const parser = new htmlparser2.Parser({
+    onopentag: (name: string, attributes: Record<string, string>) => {
+      if (name === "img" && attributes["data-gen-image"] === "true") {
+        // Validate required attributes.  Error if missing.
+        const context = attributes["data-context"];
+        const alt = attributes["alt"];
+        const src = attributes["src"];
+
+        if (!context || !alt || !src) {
+          console.warn(
+            "Skipping image: Missing required attributes (data-context, alt, or src).",
+            attributes
+          );
+          return; // Skip this image.
+        }
+
+        const image: GeneratedImage = {
+          prompt: context,
+          alt,
+          path: src,
+        };
+
+        // Optional attributes
+        if (attributes["data-style"]) {
+          image.style = attributes["data-style"];
+        }
+        if (attributes["data-width"]) {
+          const width = parseInt(attributes["data-width"], 10);
+          if (!isNaN(width)) {
+            // Check for valid integer
+            image.width = width;
+          } else {
+            console.warn("Invalid data-width:", attributes["data-width"]);
+          }
+        }
+        if (attributes["data-height"]) {
+          const height = parseInt(attributes["data-height"], 10);
+          if (!isNaN(height)) {
+            image.height = height;
+          } else {
+            console.warn("Invalid data-height:", attributes["data-height"]);
+          }
+        }
+        generatedImages.push(image);
+      }
+    },
+    onerror: (error: Error) => {
+      console.error("Parser error:", error);
+    },
+  });
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const generatedImages: ImageGenerationContext[] = [];
+
+  const reader = stream.getReader();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        if (buffer.length > 0) {
+          parser.write(buffer);
+        }
+        break;
+      }
+
+      if (value) {
+        const chunkText = decoder.decode(value, { stream: true });
+        buffer += chunkText;
+
+        try {
+          parser.write(buffer); //Feed the current buffer.
+          buffer = ""; //If successfull reset the buffer.
+        } catch (e) {
+          //The parser might not be able to handle the current buffer, save for later.
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+    parser.end();
+  }
+
+  return generatedImages;
+}
+
 function extractContentFromMarkdown(
   text: string,
   contentType: SupportedContentType
@@ -90,12 +182,76 @@ function extractContentFromMarkdown(
   return match[1].trim();
 }
 
+async function* extractCodeBlocks(
+  readableStream: ReadableStream,
+  contentType: SupportedContentType
+): AsyncGenerator<Uint8Array> {
+  const reader = readableStream.getReader();
+  let buffer = "";
+  let inCodeBlock = false;
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      if (inCodeBlock) {
+        yield new TextEncoder().encode(buffer); // Yield any remaining code
+      }
+      break;
+    }
+
+    buffer += value;
+
+    let startIndex = 0;
+
+    if (inCodeBlock == false) {
+      if (
+        (startIndex = buffer.indexOf("```" + contentType, startIndex)) !== -1
+      ) {
+        inCodeBlock = true;
+        yield new TextEncoder().encode(
+          buffer.substring(startIndex + 3 + contentType.length)
+        );
+        buffer = "";
+        startIndex = 0;
+      }
+    } else {
+      // We are in a code block, we are looking for the end of the code block
+      let endIndex = buffer.indexOf("```");
+      if (endIndex !== -1) {
+        // We found the end of the code block
+        inCodeBlock = false;
+        yield new TextEncoder().encode(buffer.substring(0, endIndex)); // Don't go past endIndex
+        // Because we are only managing one code block we can return;
+        return;
+      }
+      // Yield all the text
+      yield new TextEncoder().encode(buffer.substring(startIndex));
+      buffer = "";
+    }
+  }
+}
+
+function extractContentFromMarkdownStream(
+  stream: ReadableStream,
+  contentType: SupportedContentType
+): ReadableStream {
+  return new ReadableStream({
+    async pull(controller) {
+      for await (const chunk of extractCodeBlocks(stream, contentType)) {
+        controller.enqueue(chunk);
+      }
+      controller.close();
+    },
+  });
+}
+
 export async function generateSiteContent(
   path: string,
   site: Site,
   context: RequestContext,
   contentType: SupportedContentType
-): Promise<string> {
+): Promise<ReadableStream> {
   const basePrompt = `You are an AI content generator that creates web content for the following site based on the context in the <prompt> tags.
 
   You will have access to the content of the previous requests in the <file> tags, with each <file> representing a different path on the site.
@@ -125,11 +281,18 @@ export async function generateSiteContent(
 
   const llmProvider = getLLMProvider();
   const response = await llmProvider.generate(prompt);
-  let content = extractContentFromMarkdown(response, contentType);
+  console.log("Response from LLM Provider", response);
+  const tees = response.tee();
+  const content = extractContentFromMarkdownStream(tees[0], contentType);
+  let imageTees = content.tee();
 
   if (contentType === "html") {
-    content = await processGeneratedImages(content, site);
+    const images = await parseHtmlStreamForGeneratedImages(imageTees[1]);
+    for (const image of images) {
+      console.log("Adding image information", context.url, image);
+      await db.addSiteImageInformation(site.subdomain, image);
+    }
   }
 
-  return content;
+  return imageTees[0];
 }

@@ -6,7 +6,7 @@ export type LLMInput = {
 };
 
 export interface LLMProvider {
-  generate(prompt: LLMInput): Promise<string>;
+  generate(prompt: LLMInput): Promise<ReadableStream>;
 }
 
 export type SupportedLLMProvider = "claude" | "gemini" | "groq" | "openai";

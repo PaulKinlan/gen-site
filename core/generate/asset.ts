@@ -13,7 +13,7 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
   const previousRequests: CacheLine[] = [];
   const cache = await caches.open(site.subdomain);
   for (const previousRequest of previousRequestsOld) {
-    const urlToMatch = url;
+    const urlToMatch = new URL(url);
     urlToMatch.pathname = previousRequest.path;
     const match = await cache.match(urlToMatch);
     const value = await match?.text();
@@ -44,15 +44,16 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
   let content: string | ReadableStream;
   if (contentType === "image") {
     //
-    content = await generateDirectImage(url.pathname, site, {
+    content = await generateDirectImage(url.pathname.replace(/^\//, ""), site, {
       previousRequests,
       importedContext,
+      url,
     });
   } else {
     content = await generateSiteContent(
       url.pathname,
       site,
-      { previousRequests, importedContext },
+      { previousRequests, importedContext, url },
       contentType
     );
   }

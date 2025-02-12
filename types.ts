@@ -40,6 +40,7 @@ export type RequestHandler = {
 };
 
 export interface RequestContext {
+  url: URL;
   previousRequests: CacheLine[];
   importedContext: { url: string; markdown: string }[];
 }
