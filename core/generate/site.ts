@@ -289,7 +289,6 @@ export async function generateSiteContent(
   if (contentType === "html") {
     const images = await parseHtmlStreamForGeneratedImages(imageTees[1]);
     for (const image of images) {
-      console.log("Adding image information", context.url, image);
       await db.addSiteImageInformation(site.subdomain, image);
     }
   }

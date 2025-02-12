@@ -17,6 +17,9 @@ export async function generateDirectImage(
     path
   );
 
+  console.log(site.subdomain, path);
+  console.log("Image context", imageContext);
+
   const imageData = await llmProvider.generateImage(imageContext);
   if (!imageData) {
     throw new Error("Failed to generate image");
