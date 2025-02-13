@@ -256,12 +256,15 @@ export async function generateSiteContent(
 
   You will have access to the content of the previous requests in the <file> tags, with each <file> representing a different path on the site.
 
-  You will also have access to the extracted context from the imported URLs in the <importedContext> tag, with each <context> representing a different URL that the user would you to reference.`;
+  You will also have access to the extracted context from the imported URLs in the <importedContext> tag, with each <context> representing a different URL that the user would you to reference.
+  
+  Todays date: ${new Date().toDateString()}`;
 
   const previousRequestContext = context.previousRequests
     .filter((req) => isMediaFile(req.path) === false) // no media files.
     .filter((req) => req.value.content && req.value.content.length != 0) // no current path
     .map((req) => {
+      console.log("Request", req.path, req.value.content.length);
       return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
     });
 
