@@ -57,6 +57,10 @@ export async function initQueueHandler() {
       // If the message is of an unknown type, it might be an error
       const siteUrl = new URL("/", `https://${msg.site.subdomain}.itsmy.blog`);
       const content = await generateAsset(msg.site, siteUrl, "html");
+      console.log(`Generating site for ${msg.site.subdomain}`);
+      console.log(
+        `Opening Cache: ${msg.site.subdomain}:${msg.site.versionUuid}`
+      );
       const cache = await caches.open(
         `${msg.site.subdomain}:${msg.site.versionUuid}`
       );

@@ -252,7 +252,7 @@ export async function generateSiteContent(
   context: RequestContext,
   contentType: SupportedContentType
 ): Promise<ReadableStream> {
-  const basePrompt = `You are an expert web developer that creates web content for the following site based on the context in the <prompt> tags.
+  const system = `You are an expert web developer that creates web content for the following site based on the context in the <prompt> tags.
 
   You will have access to the content of the previous requests in the <file> tags, with each <file> representing a different path on the site.
 
@@ -270,7 +270,7 @@ export async function generateSiteContent(
   });
 
   const prompt: LLMInput = {
-    system: [basePrompt],
+    system: [system],
     files: previousRequestContext,
     context: importedContext,
     prompt: `<prompt>

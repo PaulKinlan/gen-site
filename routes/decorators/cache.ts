@@ -50,6 +50,7 @@ export function cache({ cache }: { cache: Cache }) {
         `${subdomain}:${site?.versionUuid}`
       );
 
+      console.log("Checking cache for", subdomain, req.url);
       const cachedResponse = await subdomainCache.match(req);
 
       if (cachedResponse) {
@@ -68,7 +69,7 @@ export function cache({ cache }: { cache: Cache }) {
           const cacheKey = [subdomain, path];
           cache.set(cacheKey, ""); // The old cache is now just so we know candidate previous requests (wait until matchAll is avaliable)
         }
-        //await subdomainCache.put(req, response.clone());
+        await subdomainCache.put(req, response.clone());
       }
 
       return response;

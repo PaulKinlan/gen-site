@@ -13,15 +13,11 @@ type UrlsForSite = {
   [subdomain: string]: string[];
 };
 export const db = {
-  async logPrompt(
-    prompt: string,
-    systemPrompt: string,
-    site: Site
-  ): Promise<void> {
+  async logPrompt(prompt: string, system: string, site: Site): Promise<void> {
     const key = ["prompt_log", site.subdomain, Date.now().toString()];
     const log: PromptLog = {
       prompt,
-      systemPrompt,
+      system,
       site,
       timestamp: new Date(),
     };

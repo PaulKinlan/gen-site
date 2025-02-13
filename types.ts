@@ -58,7 +58,7 @@ export type UnsupportedContentType = "unsupported";
 
 export interface PromptLog {
   prompt: string;
-  systemPrompt: string;
+  system: string;
   site: Site;
   timestamp: Date;
 }
