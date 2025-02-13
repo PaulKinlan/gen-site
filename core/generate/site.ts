@@ -258,7 +258,7 @@ export async function generateSiteContent(
     additionalPromptForContentType[contentType]
   }
 
-  You will have access to the content of the previous requests in the <file> tags, with each <file> representing a different path on the site.
+  You will have access to the content of the previous requests in the <file> tags. Each <file> representing a different path or asset on the site. Use this context to build the file in a consistent style across the site.
 
   You will also have access to the extracted context from the imported URLs in a <context> tag which represents a different URL that the user would you to reference.
   
@@ -286,7 +286,7 @@ export async function generateSiteContent(
     ${site.prompt}
   </prompt>
   
-   Using the URL pathname '${path}' and using the description in <prompt>, create a ${contentType} file.`,
+   For the request to '${path}' use the description in <prompt> to create a ${contentType} file.`,
   };
 
   const llmProvider = getLLMProvider();
