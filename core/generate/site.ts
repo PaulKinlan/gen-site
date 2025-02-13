@@ -285,8 +285,8 @@ export async function generateSiteContent(
     prompt: `<prompt>
     ${site.prompt}
   </prompt>
-  
-   For the request to '${path}' use the description in <prompt> to create a ${contentType} file.`,
+   
+   Create a ${contentType} file for the path '${path}' using the description in <prompt>.`,
   };
 
   const llmProvider = getLLMProvider();
