@@ -54,14 +54,14 @@ const template = (logs: PromptLog[]) => `
                                     <td class="px-6 py-4 text-sm text-gray-900">
                                         <div class="max-w-lg overflow-hidden">
                                             <code><pre> ${escape(
-                                              log.prompt
+                                              log.prompt || ""
                                             )}</pre></code>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900">
                                         <div class="max-w-lg overflow-hidden">
                                             <code><pre>${escape(
-                                              log.system
+                                              log.system || ""
                                             )}</pre></code>
                                         </div>
                                     </td>
