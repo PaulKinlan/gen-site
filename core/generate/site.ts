@@ -263,6 +263,7 @@ export async function generateSiteContent(
   const previousRequestContext = context.previousRequests
     .filter((req) => isMediaFile(req.path) === false) // no media files.
     .filter((req) => req.value.content && req.value.content.length != 0) // no current path
+    .filter((req) => req.path !== path) // no current path
     .map((req) => {
       console.log("Request", req.path, req.value.content.length);
       return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
@@ -288,7 +289,6 @@ export async function generateSiteContent(
   console.log("Response from LLM Provider", response);
 
   // Log the prompt
-  console.log(prompt);
   await db.logPrompt(prompt.prompt, prompt.system.join("\n"), site);
   const tees = response.tee();
   const content = extractContentFromMarkdownStream(tees[0], contentType);

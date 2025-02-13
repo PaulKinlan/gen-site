@@ -1,8 +1,6 @@
 import { CacheLine, Cache, cacheInstance } from "@makemy/core/cache.ts";
 import { db } from "@makemy/core/db.ts";
-import { DOMParser } from "jsr:@b-fuze/deno-dom";
 import { Site } from "@makemy/types.ts";
-import { UnsupportedOperationError } from "@makemy/llms/base.ts";
 import { generateSiteContent } from "@makemy/core/generate/site.ts";
 import { generateDirectImage } from "@makemy/core/generate/image.ts";
 
@@ -11,15 +9,17 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
     (await cacheInstance.getMatching(site.subdomain)) ?? [];
 
   const previousRequests: CacheLine[] = [];
-  //console.log("Cache Name", `${site.subdomain}:${site.versionUuid}`);
   const cache = await caches.open(`${site.subdomain}:${site.versionUuid}`);
   //console.log(previousRequestsOld);
   for (const previousRequest of previousRequestsOld) {
     const urlToMatch = new URL(url);
     urlToMatch.pathname = previousRequest.path;
     const match = await cache.match(urlToMatch);
-    //console.log("Url", urlToMatch);
-    //console.log("Match", match);
+    console.log("Url", urlToMatch);
+    console.log("Match", match);
+    if (match === undefined) {
+      continue;
+    }
     const value = await match?.text();
     previousRequests.push({
       path: previousRequest.path,
@@ -29,18 +29,7 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
       },
     });
   }
-  // const cache = await caches.open(site.subdomain);
-  // const cachedRequests = await cache.matchAll();
-  // for (const cachedRequest of cachedRequests) {
-  //   const cacheLine: CacheLine = {
-  //     path: cachedRequest.url,
-  //     value: {
-  //       content: await cachedRequest.text(),
-  //       timestamp: Date.now(),
-  //     },
-  //   };
-  //   previousRequests.push(cacheLine);
-  // }
+
   // Get the extracted markdown for @url syntax
   const importedContext =
     (await db.getAllExtractedMarkdown(site.subdomain)) ?? [];
