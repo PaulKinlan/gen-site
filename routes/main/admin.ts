@@ -43,6 +43,7 @@ const template = (sites: Site[]) => {
                     <a href="/" class="text-xl font-bold">makemy.blog</a>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <a href="/admin/resources/prompt-logs" class="text-gray-600 hover:text-gray-900">Prompt Logs</a>
                     <a href="/logout" class="text-gray-600 hover:text-gray-900">Logout</a>
                 </div>
             </div>

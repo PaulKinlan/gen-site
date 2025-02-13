@@ -1,5 +1,11 @@
 /// <reference lib="deno.unstable" />
-import { Site, User, CustomDomain, ImageGenerationContext } from "../types.ts";
+import {
+  Site,
+  User,
+  CustomDomain,
+  ImageGenerationContext,
+  PromptLog,
+} from "../types.ts";
 
 const kv = await Deno.openKv();
 
@@ -7,6 +13,38 @@ type UrlsForSite = {
   [subdomain: string]: string[];
 };
 export const db = {
+  async logPrompt(
+    prompt: string,
+    systemPrompt: string,
+    site: Site
+  ): Promise<void> {
+    const key = ["prompt_log", site.subdomain, Date.now().toString()];
+    const log: PromptLog = {
+      prompt,
+      systemPrompt,
+      site,
+      timestamp: new Date(),
+    };
+
+    await kv.set(key, log, {
+      expireIn: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+  },
+
+  async getPromptLogs(subdomain?: string): Promise<PromptLog[]> {
+    const prefix = subdomain ? ["prompt_log", subdomain] : ["prompt_log"];
+    const logs: PromptLog[] = [];
+
+    for await (const entry of kv.list<PromptLog>({ prefix })) {
+      logs.push(entry.value);
+    }
+
+    return logs.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  },
+
   async setSession(userId: string, sessionId: string): Promise<void> {
     await kv.set(["sessions", sessionId], userId, {
       expireIn: 1000 * 60 * 60 * 24, // 24 hours timeout

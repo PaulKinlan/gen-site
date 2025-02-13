@@ -56,6 +56,13 @@ export type SupportedContentType =
 
 export type UnsupportedContentType = "unsupported";
 
+export interface PromptLog {
+  prompt: string;
+  systemPrompt: string;
+  site: Site;
+  timestamp: Date;
+}
+
 export interface ImageGenerationContext {
   path: string;
   prompt: string;

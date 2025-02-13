@@ -11,11 +11,15 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
     (await cacheInstance.getMatching(site.subdomain)) ?? [];
 
   const previousRequests: CacheLine[] = [];
+  //console.log("Cache Name", `${site.subdomain}:${site.versionUuid}`);
   const cache = await caches.open(`${site.subdomain}:${site.versionUuid}`);
+  //console.log(previousRequestsOld);
   for (const previousRequest of previousRequestsOld) {
     const urlToMatch = new URL(url);
     urlToMatch.pathname = previousRequest.path;
     const match = await cache.match(urlToMatch);
+    //console.log("Url", urlToMatch);
+    //console.log("Match", match);
     const value = await match?.text();
     previousRequests.push({
       path: previousRequest.path,

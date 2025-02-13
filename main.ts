@@ -74,6 +74,13 @@ const buildMainRoutes = async (hostname: string) => {
     {
       pattern: new URLPattern({
         hostname,
+        pathname: "/admin/prompt-logs",
+      }),
+      handler: (await import("./routes/main/admin/prompt-logs.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
         pathname: "/api/generate-name",
       }),
       handler: (await import("./routes/main/api/generate-name.ts")).default,

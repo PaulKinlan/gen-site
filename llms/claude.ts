@@ -26,7 +26,7 @@ export class ClaudeProvider implements LLMProvider {
       const cache_control =
         cacheControlCount <= 4 ? { type: "ephemeral" } : undefined;
       cacheControlCount++;
-      return { type: "text", text: p, cache_control };
+      return { type: "text", text: p };
     });
 
     system.push({
@@ -39,7 +39,7 @@ export class ClaudeProvider implements LLMProvider {
         const cache_control =
           cacheControlCount < 4 ? { type: "ephemeral" } : undefined;
         cacheControlCount++;
-        return { type: "text", text: f, cache_control };
+        return { type: "text", text: f };
       })
     );
 
@@ -53,7 +53,7 @@ export class ClaudeProvider implements LLMProvider {
         const cache_control =
           cacheControlCount <= 4 ? { type: "ephemeral" } : undefined;
         cacheControlCount++;
-        return { type: "text", text: c, cache_control };
+        return { type: "text", text: c };
       })
     );
 

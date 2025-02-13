@@ -45,6 +45,7 @@ export function cache({ cache }: { cache: Cache }) {
       //   return originalMethod.apply(this, args);
       // }
 
+      console.log("Cache name", `${subdomain}:${site?.versionUuid}`);
       const subdomainCache = await caches.open(
         `${subdomain}:${site?.versionUuid}`
       );
