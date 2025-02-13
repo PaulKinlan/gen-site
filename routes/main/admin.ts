@@ -333,6 +333,7 @@ export default new (class extends BaseHandler {
         subdomain,
         prompt,
         userId: req.extraInformation?.userId || "",
+        versionUuid: crypto.randomUUID(),
       };
 
       await db.createSite(site);

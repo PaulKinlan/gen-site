@@ -2,6 +2,7 @@ import { Cache } from "@makemy/core/cache.ts";
 import { getSiteFromHostname } from "@makemy/utils/hostname.ts";
 import { db } from "@makemy/core/db.ts";
 import { isMediaFile } from "@makemy/utils/contentType.ts";
+import { strictEqual } from "node:assert";
 
 const ENV_SaasDomainsAuthToken = Deno.env.get("SAAS_DOMAINS_AUTH_TOKEN");
 
@@ -26,15 +27,17 @@ export function cache({ cache }: { cache: Cache }) {
       }
 
       const SaasDomainsAuthToken = req.headers.get("X-SaaS-Domains-Auth-Token");
-
+      let site;
       const servedForHeader = req.headers.get("X-Served-For");
       if (servedForHeader && ENV_SaasDomainsAuthToken == SaasDomainsAuthToken) {
         // If served through custom domain proxy then we need to change the cache key to the custom domain
-        const site = await db.getSiteByDomain(servedForHeader);
+        site = await db.getSiteByDomain(servedForHeader);
         // We shouldn't be really looking in the DB here.... but there is no way to know the context yet.
         if (site) {
           subdomain = site.subdomain;
         }
+      } else {
+        site = await db.getSite(subdomain);
       }
 
       // Skip cache for localhost
@@ -42,7 +45,9 @@ export function cache({ cache }: { cache: Cache }) {
       //   return originalMethod.apply(this, args);
       // }
 
-      const subdomainCache = await caches.open(subdomain);
+      const subdomainCache = await caches.open(
+        `${subdomain}:${site?.versionUuid}`
+      );
 
       const cachedResponse = await subdomainCache.match(req);
 

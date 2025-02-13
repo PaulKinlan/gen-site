@@ -14,6 +14,7 @@ export interface Site {
   prompt: string;
   userId: string;
   customDomains?: CustomDomain[];
+  versionUuid: string;
 }
 
 // Using built-in Deno URLPattern types

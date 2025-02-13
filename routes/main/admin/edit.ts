@@ -164,6 +164,7 @@ export default new (class extends BaseHandler {
       const site: Site = {
         ...existingSite,
         prompt: prompt.toString(),
+        versionUuid: crypto.randomUUID(),
       };
 
       await db.createSite(site); // This will overwrite the existing site

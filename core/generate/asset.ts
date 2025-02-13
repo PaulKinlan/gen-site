@@ -11,7 +11,7 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
     (await cacheInstance.getMatching(site.subdomain)) ?? [];
 
   const previousRequests: CacheLine[] = [];
-  const cache = await caches.open(site.subdomain);
+  const cache = await caches.open(`${site.subdomain}:${site.versionUuid}`);
   for (const previousRequest of previousRequestsOld) {
     const urlToMatch = new URL(url);
     urlToMatch.pathname = previousRequest.path;

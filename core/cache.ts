@@ -6,7 +6,10 @@ import { Site } from "@makemy/types.ts";
 */
 export async function clearCacheForSite(site: Site): Promise<boolean> {
   // This will use the deno cache API to delete all cache entries for a site
-  return await caches.delete(site.subdomain);
+  // This is no a no op until deno deploy enables cache deletion.
+  return true;
+  //const key = `${site.subdomain}:${site.versionUuid}`;
+  //return await caches.delete(key);
 }
 
 /*
