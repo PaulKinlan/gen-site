@@ -252,19 +252,24 @@ export async function generateSiteContent(
   context: RequestContext,
   contentType: SupportedContentType
 ): Promise<ReadableStream> {
-  const system = `You are an expert web developer that creates web content for the following site based on the context in the <prompt> tags.
+  const system = `You are an expert web developer that creates beautiful web sites.
+
+  You will return a ${contentType} that follows these rules: ${
+    additionalPromptForContentType[contentType]
+  }
 
   You will have access to the content of the previous requests in the <file> tags, with each <file> representing a different path on the site.
 
-  You will also have access to the extracted context from the imported URLs in the <importedContext> tag, with each <context> representing a different URL that the user would you to reference.
+  You will also have access to the extracted context from the imported URLs in a <context> tag which represents a different URL that the user would you to reference.
   
-  Todays date: ${new Date().toDateString()}`;
+  Today's date: ${new Date().toDateString()}`;
 
   const previousRequestContext = context.previousRequests
     .filter((req) => isMediaFile(req.path) === false) // no media files.
     .filter((req) => req.value.content && req.value.content.length != 0) // no current path
     .filter((req) => req.path !== path) // no current path
     .map((req) => {
+      console.log(req.path, path);
       console.log("Request", req.path, req.value.content.length);
       return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
     });
@@ -281,7 +286,7 @@ export async function generateSiteContent(
     ${site.prompt}
   </prompt>
   
-   Using the URL pathname '${path}' and using the description in <prompt>, create a ${contentType} file that follows these rules: ' ${additionalPromptForContentType[contentType]}`,
+   Using the URL pathname '${path}' and using the description in <prompt>, create a ${contentType} file.`,
   };
 
   const llmProvider = getLLMProvider();

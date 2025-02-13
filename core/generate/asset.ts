@@ -15,8 +15,6 @@ export async function generateAsset(site: Site, url: URL, contentType: string) {
     const urlToMatch = new URL(url);
     urlToMatch.pathname = previousRequest.path;
     const match = await cache.match(urlToMatch);
-    console.log("Url", urlToMatch);
-    console.log("Match", match);
     if (match === undefined) {
       continue;
     }
