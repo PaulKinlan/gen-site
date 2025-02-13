@@ -254,7 +254,7 @@ export async function generateSiteContent(
 ): Promise<ReadableStream> {
   const system = `You are an expert web developer that creates beautiful web sites.
 
-  You will return a ${contentType} that follows these rules: ${
+  You will return a ${contentType} file that follows these rules: ${
     additionalPromptForContentType[contentType]
   }
 
