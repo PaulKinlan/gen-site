@@ -59,6 +59,9 @@ export class ClaudeProvider implements LLMProvider {
 
     const client = new Anthropic({ apiKey: this.apiKey });
 
+    console.log("System messages", system);
+    console.log("Prompt", prompt.prompt);
+
     const stream = await client.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 8192,
