@@ -2,6 +2,7 @@ import { db } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { BaseHandler } from "@makemy/routes/base.ts";
 import { PromptLog } from "@makemy/types.ts";
+import { escape } from "@std/html/entities";
 
 const template = (logs: PromptLog[]) => `
 <!DOCTYPE html>
@@ -52,16 +53,16 @@ const template = (logs: PromptLog[]) => `
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900">
                                         <div class="max-w-lg overflow-hidden">
-                                            <code><pre> ${
+                                            <code><pre> ${escape(
                                               log.prompt
-                                            }</pre></code>
+                                            )}</pre></code>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900">
                                         <div class="max-w-lg overflow-hidden">
-                                            <code><pre>${
+                                            <code><pre>${escape(
                                               log.system
-                                            }</pre></code>
+                                            )}</pre></code>
                                         </div>
                                     </td>
                                 </tr>
