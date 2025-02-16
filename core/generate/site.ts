@@ -1,9 +1,5 @@
 import { db } from "@makemy/core/db.ts";
-import {
-  LLMInput,
-  LLMImage,
-  UnsupportedOperationError,
-} from "@makemy/llms/base.ts";
+import { LLMInput, UnsupportedOperationError } from "@makemy/llms/base.ts";
 import { getLLMProvider } from "@makemy/llms/factory.ts";
 import {
   ImageGenerationContext,
@@ -33,52 +29,9 @@ export const additionalPromptForContentType: Record<string, string> = {
        data-height="[optional height in pixels]"
        alt="[descriptive alt text]" 
        src="[descriptive-file-name-for-the-image]">`,
-  css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode.",
+  css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the HTML.",
   js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
 };
-
-async function processGeneratedImages(
-  content: string,
-  site: Site
-): Promise<string> {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(content, "text/html");
-  const images = Array.from(doc.querySelectorAll("img[data-gen-image='true']"));
-
-  console.log("Processing Images", images);
-
-  for (const img of images) {
-    try {
-      const context: ImageGenerationContext = {
-        prompt: img.getAttribute("data-context") || "",
-        style: img.getAttribute("data-style") || undefined,
-        width: parseInt(img.getAttribute("data-width") || "512", 10),
-        height: parseInt(img.getAttribute("data-height") || "512", 10),
-        alt: img.getAttribute("alt") || "",
-        path: img.getAttribute("src") || "",
-      };
-
-      if (!context.prompt) {
-        console.warn("Missing data-context for image generation");
-        continue;
-      }
-
-      // Save the image information so it can be used later
-      await db.addSiteImageInformation(site.subdomain, context);
-    } catch (error) {
-      if (error instanceof UnsupportedOperationError) {
-        console.warn("Image generation not supported:", error.message);
-        break;
-      }
-      console.error("Failed to generate image:", error);
-    }
-  }
-
-  if (!doc.documentElement) {
-    throw new Error("Failed to parse HTML document");
-  }
-  return doc.documentElement.outerHTML;
-}
 
 async function parseHtmlStreamForGeneratedImages(
   stream: ReadableStream<Uint8Array>
@@ -170,27 +123,6 @@ async function parseHtmlStreamForGeneratedImages(
   return generatedImages;
 }
 
-function extractContentFromMarkdown(
-  text: string,
-  contentType: SupportedContentType
-): string {
-  const codeBlockRegex = new RegExp(
-    `\`\`\`${contentType}\\s*\\n([\\s\\S]*?)\\n\`\`\``,
-    "i"
-  );
-  const match = text.match(codeBlockRegex);
-
-  if (!match) {
-    console.log("\n=== Claude Response Analysis ===");
-    console.log("Failed to find code block in response");
-    console.log("Content Type:", contentType);
-    console.log("Full Response:", text);
-    throw new Error(`No ${contentType} code block found in the response`);
-  }
-
-  return match[1].trim();
-}
-
 async function* extractCodeBlocks(
   readableStream: ReadableStream,
   contentType: SupportedContentType
@@ -271,7 +203,7 @@ export async function generateSiteContent(
 
   You will also have access to the extracted context from the imported URLs in a <context> tag which represents a different URL that the user would you to reference.
 
-  Use the up
+  You have access to user-uploaded images. Use these images to enhance the site layout and design
   
   Today's date: ${new Date().toDateString()}`;
 
@@ -303,6 +235,7 @@ export async function generateSiteContent(
   }
 
   // Create base64 encoded images for Claude
+  // TODO: Maybe move this to the priovider specific code.
   const images = await Promise.all(
     Object.entries(imageData).map(([id, data]) => {
       const image = userImages.find((img) => img.id === id);
@@ -321,10 +254,7 @@ export async function generateSiteContent(
   );
 
   const prompt: LLMInput = {
-    system: [
-      system,
-      "You have access to user-uploaded images. Use these images to enhance the site layout and design.",
-    ],
+    system: [system],
     files: previousRequestContext,
     context: importedContext,
     prompt: `<prompt>
