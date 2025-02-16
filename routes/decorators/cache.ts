@@ -47,10 +47,10 @@ export function cache({ cache }: { cache: Cache }) {
         site = await db.getSite(subdomain);
       }
 
-      // Skip cache for localhost
-      if (subdomain === "localhost") {
-        return originalMethod.apply(this, args);
-      }
+      // // Skip cache for localhost
+      // if (subdomain === "localhost") {
+      //   return originalMethod.apply(this, args);
+      // }
 
       console.log("Cache name", `${subdomain}:${site?.versionUuid}`);
       const subdomainCache = await caches.open(

@@ -297,10 +297,10 @@ export default new (class extends BaseHandler {
       }
 
       // regenerate the site so the first load is quicker
-      await kv.enqueue(
-        { message: "generate-site", site },
-        { delay: 0 } // 1 hour delay
-      );
+      // await kv.enqueue(
+      //   { message: "generate-site", site },
+      //   { delay: 0 } // 1 hour delay
+      // );
 
       baseUrl.pathname = "/admin";
       return Response.redirect(baseUrl, 303);
