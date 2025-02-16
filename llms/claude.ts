@@ -34,6 +34,7 @@ export class ClaudeProvider implements LLMProvider {
 
   async generate(prompt: LLMInput): Promise<ReadableStream> {
     let cacheControlCount = 0;
+    const content: ContentBlock[] = [];
     const system: SystemMessage[] = prompt.system.map((p) => {
       const cache_control =
         cacheControlCount <= 4 ? { type: "ephemeral" } : undefined;
@@ -58,6 +59,11 @@ export class ClaudeProvider implements LLMProvider {
             data: img.data,
           },
         });
+      }
+
+      if (prompt.images.length > 1) {
+        // cache control for multiple images
+        content.at(-1).cache_control = { type: "ephemeral" };
       }
     }
 
@@ -93,8 +99,6 @@ export class ClaudeProvider implements LLMProvider {
 
     console.log("System messages", system);
     console.log("Prompt", prompt.prompt);
-
-    const content: ContentBlock[] = [];
 
     // Add text prompt
     content.push({
