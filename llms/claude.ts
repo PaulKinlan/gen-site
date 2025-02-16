@@ -72,6 +72,8 @@ export class ClaudeProvider implements LLMProvider {
       text: "Context from previous requests:\n",
     });
 
+    console.log("Files", prompt.files);
+
     system.push(
       ...prompt.files.map((f) => {
         const cache_control =

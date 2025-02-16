@@ -69,7 +69,9 @@ const template = (logs: PromptLog[]) => `
                                                         <div class="relative">
                                                             <img src="/api/user-images?id=${
                                                               img.id
-                                                            }&w=100" 
+                                                            }&subdomain=${
+                                                          log.site.subdomain
+                                                        }" 
                                                                  alt="${escape(
                                                                    img.filename
                                                                  )}"

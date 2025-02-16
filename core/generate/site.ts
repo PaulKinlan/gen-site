@@ -206,11 +206,11 @@ You are creating a ${contentType.toLocaleUpperCase()} file for the path '${path}
   )}' and you MUST follow these rules: 
 ${additionalPromptForContentType[contentType]}
 
-Use the content of previous requests in the <file> tags to build your reply. Each <file> representing a different path or asset on the site. Use this to build the file in a consistent style across the site.
+You MUST ensure that the site is consistent. Use the content of previous requests in the <file> tags to create your response. Each <file> representing a different asset on the site.
 
-Use the the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
+Use the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
-Use the the user uploaded images to inform the site layout and design, themes, background images and more.
+Use the user uploaded images to inform the site layout and design, themes, background images and more.
   
 If you need to use the date, today's date is: ${new Date().toDateString()}`;
 
