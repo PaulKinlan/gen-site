@@ -33,8 +33,7 @@ export const additionalPromptForContentType: Record<string, string> = {
        data-width="[optional width in pixels]"
        data-height="[optional height in pixels]"
        alt="[descriptive alt text]" 
-       src="[descriptive-file-name-for-the-image]">
-  + Use the uploaded images as inspiration for the layout and design of the site.`,
+       src="[descriptive-file-name-for-the-image]">`,
   css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the provided HTML.",
   js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
 };
@@ -210,7 +209,7 @@ You MUST ensure that the site is consistent. Use the content of previous request
 
 Use the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
-Use the attached images to inform the site layout and design, themes, background images and more.
+Use the attached images to inform the site layout and design, themes, background images.
 
 Don't explain your output, just return the required code.
   
