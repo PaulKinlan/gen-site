@@ -36,6 +36,13 @@ export function cache({ cache }: { cache: Cache }) {
         if (site) {
           subdomain = site.subdomain;
         }
+      } else if (
+        subdomain === "localhost" &&
+        url.searchParams.get("subdomain") !== null
+      ) {
+        subdomain = url.searchParams.get("subdomain") as string;
+        console.log("Subdomain from query", subdomain);
+        site = await db.getSite(subdomain);
       } else {
         site = await db.getSite(subdomain);
       }

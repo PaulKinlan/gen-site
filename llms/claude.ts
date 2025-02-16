@@ -61,10 +61,10 @@ export class ClaudeProvider implements LLMProvider {
         });
       }
 
-      if (prompt.images.length > 1) {
-        // cache control for multiple images
-        content.at(-1).cache_control = { type: "ephemeral" };
-      }
+      // if (prompt.images.length > 1) {
+      //   // cache control for multiple images
+      //   content.at(-1).cache_control = { type: "ephemeral" };
+      // }
     }
 
     system.push({
