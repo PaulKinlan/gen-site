@@ -17,7 +17,7 @@ import { encodeBase64 } from "@std/encoding";
 const getDomain = (site: Site) =>
   site.customDomains && site.customDomains.length > 0
     ? site.customDomains[0]
-    : site.subdomain;
+    : `${site.subdomain}.itsmy.blog`;
 
 export const additionalPromptForContentType: Record<string, string> = {
   html: `+ Generate valid accessible HTML5 content
