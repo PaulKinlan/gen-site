@@ -69,20 +69,11 @@ export default new (class extends BaseHandler {
       const imageId = crypto.randomUUID();
       const imageData = await file.arrayBuffer();
 
-      const img = await createImageBitmap(
-        new Blob([new Uint8Array(imageData)], { type: file.type })
-      );
-
-      const width = img.width;
-      const height = img.height;
-
       // Store image metadata
       const image: UserImage = {
         id: imageId,
         subdomain: subdomain,
         filename: file.name,
-        width,
-        height,
         mimeType: file.type,
         createdAt: new Date(),
       };

@@ -78,8 +78,8 @@ export interface UserImage {
   subdomain: string;
   filename: string;
   mimeType: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   createdAt: Date;
 }
 
