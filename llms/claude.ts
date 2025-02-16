@@ -41,6 +41,26 @@ export class ClaudeProvider implements LLMProvider {
       return { type: "text", text: p };
     });
 
+    // Add images if present
+    let imageCounter = 0;
+    if (prompt.images && prompt.images.length > 0) {
+      for (const img of prompt.images) {
+        content.push({
+          type: "text",
+          text: `Image ${imageCounter++}`,
+        });
+
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.media_type as MediaType,
+            data: img.data,
+          },
+        });
+      }
+    }
+
     system.push({
       type: "text",
       text: "Context from previous requests:\n",
@@ -81,26 +101,6 @@ export class ClaudeProvider implements LLMProvider {
       type: "text",
       text: prompt.prompt,
     });
-
-    // Add images if present
-    let imageCounter = 0;
-    if (prompt.images && prompt.images.length > 0) {
-      for (const img of prompt.images) {
-        content.push({
-          type: "text",
-          text: `Image ${imageCounter++}`,
-        });
-
-        content.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: img.media_type as MediaType,
-            data: img.data,
-          },
-        });
-      }
-    }
 
     const stream = await client.messages.create({
       model: "claude-3-5-sonnet-20241022",

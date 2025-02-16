@@ -1,5 +1,5 @@
 import { db } from "@makemy/core/db.ts";
-import { LLMInput, UnsupportedOperationError } from "@makemy/llms/base.ts";
+import { LLMInput } from "@makemy/llms/base.ts";
 import { getLLMProvider } from "@makemy/llms/factory.ts";
 import {
   ImageGenerationContext,
@@ -9,17 +9,22 @@ import {
 } from "@makemy/types.ts";
 import { StorageService } from "@makemy/core/storage.ts";
 import { isMediaFile } from "@makemy/utils/contentType.ts";
-import { DOMParser } from "jsr:@b-fuze/deno-dom";
 import * as htmlparser2 from "@victr/htmlparser2";
 import { encodeBase64 } from "@std/encoding";
 
 // Site generation helper
 
+const getDomain = (site: Site) =>
+  site.customDomains && site.customDomains.length > 0
+    ? site.customDomains[0]
+    : site.subdomain;
+
 export const additionalPromptForContentType: Record<string, string> = {
   html: `+ Generate valid accessible HTML5 content
 + <meta name="generator" content="MakeMy.blog" />
 + Include semantic markup and ensure accessibility. 
-+ Do not use inline CSS or <style> blocks, instead link to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
++ You may use inline CSS and <style> blocks, but you must keep all the pages consistent.
++ You should prefer to ink to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
 + Prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.
 + For images that should be AI generated, use the following format:
   <img data-gen-image="true" 
@@ -194,19 +199,20 @@ export async function generateSiteContent(
   context: RequestContext,
   contentType: SupportedContentType
 ): Promise<ReadableStream> {
-  const system = `You are an expert web developer that creates beautiful web sites.
+  const system = `You are an expert web developer that creates unique beautiful, fast, accessible web sites. 
 
-  You will return a ${contentType} file that follows these rules: ${
-    additionalPromptForContentType[contentType]
-  }
+You are creating a ${contentType.toLocaleUpperCase()} file for the path '${path}' for this site '${getDomain(
+    site
+  )}' and you MUST follow these rules: 
+${additionalPromptForContentType[contentType]}
 
-  You will have access to the content of the previous requests in the <file> tags. Each <file> representing a different path or asset on the site. Use this context to build the file in a consistent style across the site.
+Use the content of previous requests in the <file> tags to build your reply. Each <file> representing a different path or asset on the site. Use this to build the file in a consistent style across the site.
 
-  You will also have access to the extracted context from the imported URLs in a <context> tag which represents a different URL that the user would you to reference.
+Use the the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
-  You have access to user-uploaded images. Use these images to inform the site layout and design, themes, background images and more.
+Use the the user uploaded images to inform the site layout and design, themes, background images and more.
   
-  If you need to use the date, today's date is: ${new Date().toDateString()}`;
+If you need to use the date, today's date is: ${new Date().toDateString()}`;
 
   const previousRequestContext = context.previousRequests
     .filter((req) => isMediaFile(req.path) === false) // no media files.
@@ -261,8 +267,10 @@ export async function generateSiteContent(
     prompt: `<prompt>
     ${site.prompt}
   </prompt>
-   
-   Create a ${contentType} file for the path '${path}' using the description in <prompt>.`,
+
+Create a ${contentType.toLocaleUpperCase()} file for the path '${path}' for the site '${getDomain(
+      site
+    )}' based on the content in <prompt>`,
     images: images.filter(
       (img): img is NonNullable<typeof img> => img !== null
     ),
