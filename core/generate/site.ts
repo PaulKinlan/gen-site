@@ -264,13 +264,9 @@ If you need to use the date, today's date is: ${new Date().toDateString()}`;
     system: [system],
     files: previousRequestContext,
     context: importedContext,
-    prompt: `<prompt>
-    ${site.prompt}
-  </prompt>
+    prompt: `<prompt>${site.prompt}</prompt>
 
-Create a ${contentType.toLocaleUpperCase()} file for the path '${path}' for the site '${getDomain(
-      site
-    )}' based on the content in <prompt>`,
+Create a ${contentType.toLocaleUpperCase()} file for the path '${path}' based on the content in <prompt>`,
     images: images.filter(
       (img): img is NonNullable<typeof img> => img !== null
     ),
