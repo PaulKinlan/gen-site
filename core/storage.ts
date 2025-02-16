@@ -3,7 +3,7 @@ import {
   ImageMagick,
   initializeImageMagick,
   MagickGeometry,
-} from "npm:@imagemagick/magick-wasm";
+} from "@imagemagick/magick-wasm";
 import { ImageResizeOptions } from "@makemy/types.ts";
 
 const BUCKET_NAME = Deno.env.get("USER_IMAGES_BUCKET") || "";
@@ -21,7 +21,7 @@ const storage = new Storage({
 const bucket = storage.bucket(BUCKET_NAME);
 
 const wasm = await Deno.readFile(
-  new URL("magick.wasm", import.meta.resolve("npm:@imagemagick/magick-wasm"))
+  new URL("magick.wasm", import.meta.resolve("@imagemagick/magick-wasm"))
 );
 await initializeImageMagick(wasm);
 
