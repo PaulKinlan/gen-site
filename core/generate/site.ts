@@ -28,8 +28,9 @@ export const additionalPromptForContentType: Record<string, string> = {
        data-width="[optional width in pixels]"
        data-height="[optional height in pixels]"
        alt="[descriptive alt text]" 
-       src="[descriptive-file-name-for-the-image]">`,
-  css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the HTML.",
+       src="[descriptive-file-name-for-the-image]">
+  + Use the uploaded images as inspiration for the layout and design of the site.`,
+  css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the provided HTML.",
   js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
 };
 
@@ -203,9 +204,9 @@ export async function generateSiteContent(
 
   You will also have access to the extracted context from the imported URLs in a <context> tag which represents a different URL that the user would you to reference.
 
-  You have access to user-uploaded images. Use these images to enhance the site layout and design
+  You have access to user-uploaded images. Use these images to inform the site layout and design, themes, background images and more.
   
-  Today's date: ${new Date().toDateString()}`;
+  If you need to use the date, today's date is: ${new Date().toDateString()}`;
 
   const previousRequestContext = context.previousRequests
     .filter((req) => isMediaFile(req.path) === false) // no media files.
