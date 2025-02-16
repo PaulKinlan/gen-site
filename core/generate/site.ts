@@ -205,7 +205,9 @@ The user has confirmed that they own all of the rights to the content and images
 When creating an ${contentType.toLocaleUpperCase()} file for this site and you MUST follow these rules: 
 ${additionalPromptForContentType[contentType]}
 
-You MUST ensure that the site is consistent. Use the content of previous requests in the <file> tags to create your response. Each <file> representing a different asset on the site.
+Do not create the other files for this site, only the ${contentType.toLocaleUpperCase()} file for the path '${path}'.
+
+You MUST ensure that the site is consistent. To ensure consistency you MUST use the content of previous requests defined in the <file> tags to create your response. 
 
 Use the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
