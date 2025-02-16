@@ -201,16 +201,16 @@ export async function generateSiteContent(
 ): Promise<ReadableStream> {
   const system = `You are an expert web developer that creates unique beautiful, fast, accessible web sites. 
 
-You are creating a ${contentType.toLocaleUpperCase()} file for the path '${path}' for this site '${getDomain(
-    site
-  )}' and you MUST follow these rules: 
+You are creating a ${contentType.toLocaleUpperCase()} file for the path '${path}' for this site and you MUST follow these rules: 
 ${additionalPromptForContentType[contentType]}
 
 You MUST ensure that the site is consistent. Use the content of previous requests in the <file> tags to create your response. Each <file> representing a different asset on the site.
 
 Use the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
-Use the user uploaded images to inform the site layout and design, themes, background images and more.
+Use the attached images to inform the site layout and design, themes, background images and more.
+
+Don't explain your output, just return the required code.
   
 If you need to use the date, today's date is: ${new Date().toDateString()}`;
 
