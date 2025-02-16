@@ -53,9 +53,39 @@ const template = (logs: PromptLog[]) => `
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900">
                                         <div class="max-w-lg overflow-hidden">
-                                            <code><pre> ${escape(
+                                            <code><pre>${escape(
                                               log.prompt || ""
                                             )}</pre></code>
+                                            ${
+                                              log.images &&
+                                              log.images.length > 0
+                                                ? `
+                                            <div class="mt-2">
+                                                <p class="text-sm font-medium text-gray-700">Images Used:</p>
+                                                <div class="flex flex-wrap gap-2 mt-1">
+                                                    ${log.images
+                                                      .map(
+                                                        (img) => `
+                                                        <div class="relative">
+                                                            <img src="/api/user-images?id=${
+                                                              img.id
+                                                            }&w=100" 
+                                                                 alt="${escape(
+                                                                   img.filename
+                                                                 )}"
+                                                                 class="w-[100px] h-[100px] object-cover rounded border border-gray-200"
+                                                                 title="${escape(
+                                                                   img.filename
+                                                                 )}">
+                                                        </div>
+                                                    `
+                                                      )
+                                                      .join("")}
+                                                </div>
+                                            </div>
+                                            `
+                                                : ""
+                                            }
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900">

@@ -1,10 +1,14 @@
 import { CacheLine, Cache, cacheInstance } from "@makemy/core/cache.ts";
 import { db } from "@makemy/core/db.ts";
-import { Site } from "@makemy/types.ts";
+import { Site, SupportedContentType } from "@makemy/types.ts";
 import { generateSiteContent } from "@makemy/core/generate/site.ts";
 import { generateDirectImage } from "@makemy/core/generate/image.ts";
 
-export async function generateAsset(site: Site, url: URL, contentType: string) {
+export async function generateAsset(
+  site: Site,
+  url: URL,
+  contentType: SupportedContentType
+) {
   const previousRequestsOld: CacheLine[] =
     (await cacheInstance.getMatching(site.subdomain)) ?? [];
 

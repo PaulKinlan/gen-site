@@ -61,6 +61,7 @@ export interface PromptLog {
   system: string;
   site: Site;
   timestamp: Date;
+  images?: UserImage[]; // Optional array of images used in the prompt
 }
 
 export interface ImageGenerationContext {
@@ -70,6 +71,22 @@ export interface ImageGenerationContext {
   width?: number;
   height?: number;
   alt?: string;
+}
+
+export interface UserImage {
+  id: string;
+  subdomain: string;
+  filename: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  createdAt: Date;
+}
+
+export interface ImageResizeOptions {
+  width?: number;
+  height?: number;
+  fit?: "cover" | "contain" | "fill" | "inside" | "outside";
 }
 
 declare global {

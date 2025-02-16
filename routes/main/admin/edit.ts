@@ -64,6 +64,25 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
                         </div>
                     </div>
 
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Images
+                        </label>
+                        <div class="mt-1">
+                            <div class="flex flex-wrap gap-4" id="imageGrid">
+                                <!-- Images will be loaded here via JavaScript -->
+                            </div>
+                            <div class="mt-4">
+                                <label class="inline-flex items-center px-4 py-2 border border-gray-300 
+                                            shadow-sm text-sm font-medium rounded-md text-gray-700 
+                                            bg-white hover:bg-gray-50 cursor-pointer">
+                                    <input type="file" accept="image/*" id="imageUpload" class="hidden">
+                                    Upload Image
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex flex-col grow h-full">
                         <label class="block text-sm font-medium text-gray-700">
                             Site Prompt
@@ -107,6 +126,91 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
             }
         </div>
     </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageGrid = document.getElementById('imageGrid');
+    const imageUpload = document.getElementById('imageUpload');
+    const subdomain = document.querySelector('input[name="subdomain"]').value;
+
+    // Load existing images
+    async function loadImages() {
+        try {
+            const response = await fetch('/api/user-images?subdomain=' + subdomain);
+            if (!response.ok) throw new Error('Failed to load images');
+            const images = await response.json();
+            
+            imageGrid.innerHTML = images.map(image => \`
+                <div class="relative group" data-image-id="\${image.id}">
+                    <img src="/api/user-images?id=\${image.id}&subdomain=\${subdomain}&w=150" 
+                         alt="\${image.filename}"
+                         class="w-[150px] h-[150px] object-cover rounded-lg border border-gray-200">
+                    <button onclick="deleteImage('\${image.id}')"
+                            class="absolute top-2 right-2 hidden group-hover:block p-1 
+                                   bg-red-500 text-white rounded-full hover:bg-red-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            \`).join('');
+        } catch (error) {
+            console.error('Error loading images:', error);
+        }
+    }
+
+    // Handle image upload
+    imageUpload.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('subdomain', subdomain);
+
+        try {
+            const response = await fetch('/api/user-images', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed');
+            
+            // Reload images after successful upload
+            await loadImages();
+            
+            // Clear the file input
+            imageUpload.value = '';
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Failed to upload image. Please try again.');
+        }
+    });
+
+    // Handle image deletion
+    window.deleteImage = async function(imageId) {
+        event.preventDefault(); 
+        if (!confirm('Are you sure you want to delete this image?')) return;
+
+        try {
+            const response = await fetch(\`/api/user-images?id=\${imageId}&subdomain=\${subdomain}\`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Delete failed');
+            
+            // Reload images after successful deletion
+            await loadImages();
+        } catch (error) {
+            console.error('Error deleting image:', error);
+            alert('Failed to delete image. Please try again.');
+        }
+    };
+
+    // Initial load
+    loadImages();
+});
+</script>
 </body>
 </html>`;
 

@@ -1,11 +1,23 @@
-import { LLMInput, LLMProvider } from "@makemy/llms/base.ts";
+import { LLMInput, LLMProvider, LLMImage } from "@makemy/llms/base.ts";
 import Anthropic from "@anthropic-ai/sdk";
 
-type Message = {
-  role: string;
-  content: string;
-  cache_control?: { type: string };
+type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+
+type ImageBlock = {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: MediaType;
+    data: string;
+  };
 };
+
+type TextBlock = {
+  type: "text";
+  text: string;
+};
+
+type ContentBlock = TextBlock | ImageBlock;
 
 type SystemMessage = {
   type: string;
@@ -20,7 +32,7 @@ export class ClaudeProvider implements LLMProvider {
     this.apiKey = Deno.env.get("ANTHROPIC_API_KEY") || "";
   }
 
-  async generate(prompt: LLMInput): Promise<ReadbleStream> {
+  async generate(prompt: LLMInput): Promise<ReadableStream> {
     let cacheControlCount = 0;
     const system: SystemMessage[] = prompt.system.map((p) => {
       const cache_control =
@@ -62,6 +74,34 @@ export class ClaudeProvider implements LLMProvider {
     console.log("System messages", system);
     console.log("Prompt", prompt.prompt);
 
+    const content: ContentBlock[] = [];
+
+    // Add text prompt
+    content.push({
+      type: "text",
+      text: prompt.prompt,
+    });
+
+    // Add images if present
+    let imageCounter = 0;
+    if (prompt.images && prompt.images.length > 0) {
+      for (const img of prompt.images) {
+        content.push({
+          type: "text",
+          text: `Image ${imageCounter++}`,
+        });
+
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.media_type as MediaType,
+            data: img.data,
+          },
+        });
+      }
+    }
+
     const stream = await client.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 8192,
@@ -69,7 +109,7 @@ export class ClaudeProvider implements LLMProvider {
       messages: [
         {
           role: "user",
-          content: prompt.prompt,
+          content,
         },
       ],
       stream: true,

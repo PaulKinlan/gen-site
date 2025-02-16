@@ -60,8 +60,7 @@ class SubdomainHandler extends BaseHandler {
     let content: string | ReadableStream = await generateAsset(
       site,
       url,
-      contentType,
-      path
+      contentType
     );
 
     const mimeType = getMimeType(path);

@@ -95,6 +95,13 @@ const buildMainRoutes = async (hostname: string) => {
     {
       pattern: new URLPattern({
         hostname,
+        pathname: "/api/user-images",
+      }),
+      handler: (await import("./routes/main/api/user-images.ts")).default,
+    },
+    {
+      pattern: new URLPattern({
+        hostname,
         pathname: "/api/fetch-markdown",
       }),
       handler: (await import("./routes/main/api/fetch-markdown.ts")).default,

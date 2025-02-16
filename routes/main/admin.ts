@@ -15,11 +15,24 @@ const template = (sites: Site[]) => {
     <div>
       <div class="mt-1">
         <div class="flex justify-between items-center">
-          <p><a href="https://${site.subdomain}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${site.subdomain}.itsmy.blog</a></p>
+          <p><a href="https://${escapeHtml(
+            site.subdomain
+          )}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${escapeHtml(
+        site.subdomain
+      )}.itsmy.blog</a></p>
           <div class="flex gap-4">
-            <a href="/admin/edit?subdomain=${site.subdomain}" class="text-blue-600 hover:text-blue-800">Edit</a>
-            <button onclick="manageDomains('${site.subdomain}')" class="text-blue-600 hover:text-blue-800">Domains</button>
-            <button onclick="deleteSite('${site.subdomain}')" class="text-red-600 hover:text-red-800">Delete</button>
+            <a href="/admin/edit?subdomain=${escapeHtml(
+              site.subdomain
+            )}" class="text-blue-600 hover:text-blue-800">Edit</a>
+            <button onclick="manageImages('${escapeHtml(
+              site.subdomain
+            )}')" class="text-blue-600 hover:text-blue-800">Images</button>
+            <button onclick="manageDomains('${escapeHtml(
+              site.subdomain
+            )}')" class="text-blue-600 hover:text-blue-800">Domains</button>
+            <button onclick="deleteSite('${escapeHtml(
+              site.subdomain
+            )}')" class="text-red-600 hover:text-red-800">Delete</button>
           </div>
         </div>
       </div>
@@ -114,6 +127,42 @@ const template = (sites: Site[]) => {
         </div>
     </div>
 
+    <!-- Image Management Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
+      <div class="flex min-h-full items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-4xl w-full">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">Manage Images</h3>
+            <button onclick="closeImageModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+          </div>
+          
+          <div id="images-grid" class="grid grid-cols-3 gap-4 mb-4">
+            <!-- Images will be listed here -->
+          </div>
+
+          <form id="upload-image-form" class="mb-4">
+            <div class="flex gap-2">
+              <label class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                          text-center cursor-pointer hover:bg-gray-50">
+                <input type="file" accept="image/*" id="image-upload" class="hidden">
+                <input type="hidden" name="subdomain" value="{subdomain}">
+                Upload Image
+              </label>
+            </div>
+          </form>
+
+          <div class="text-sm text-gray-600">
+            <p class="mb-2">Image Guidelines:</p>
+            <ul class="list-disc list-inside space-y-1">
+              <li>Supported formats: JPEG, PNG, GIF, WebP</li>
+              <li>Maximum size: 10MB</li>
+              <li>Recommended dimensions: 2048x2048 pixels or smaller</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Domain Management Modal -->
     <div id="domain-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
       <div class="flex min-h-full items-center justify-center">
@@ -153,6 +202,85 @@ const template = (sites: Site[]) => {
     <script>
     let checkNameTimeout;
     let currentSubdomain;
+
+    async function manageImages(subdomain) {
+      currentSubdomain = subdomain;
+      const modal = document.getElementById('image-modal');
+      const imagesGrid = document.getElementById('images-grid');
+      modal.classList.remove('hidden');
+      
+      // Fetch and display images
+      try {
+        const response = await fetch('/api/user-images?subdomain=' + subdomain);
+        const images = await response.json();
+        
+        imagesGrid.innerHTML = images?.length 
+          ? images.map(image => \`
+              <div class="relative group">
+                <img src="/api/user-images?id=\${image.id}" 
+                     alt="\${image.filename}"
+                     class="w-[150px] h-[150px] object-cover rounded-lg border border-gray-200"
+                     title="Original size: \${image.width}x\${image.height}">
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
+                  <button onclick="deleteImage('\${image.id}')" 
+                    class="text-white opacity-0 group-hover:opacity-100 transition-all bg-red-600 hover:bg-red-700 px-3 py-1 rounded">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            \`).join('')
+          : '<p class="text-gray-500 col-span-3 text-center py-4">No images uploaded yet</p>';
+      } catch (error) {
+        console.error('Error fetching images:', error);
+        imagesGrid.innerHTML = '<p class="text-red-500 col-span-3 text-center py-4">Failed to load images</p>';
+      }
+    }
+
+    function closeImageModal() {
+      document.getElementById('image-modal').classList.add('hidden');
+    }
+
+    document.getElementById('image-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch('/api/user-images', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error(await response.text());
+        
+        // Refresh the images grid
+        manageImages(currentSubdomain);
+        
+        // Clear the file input
+        e.target.value = '';
+      } catch (error) {
+        alert('Failed to upload image: ' + error.message);
+      }
+    });
+
+    async function deleteImage(imageId) {
+      if (!confirm('Are you sure you want to delete this image?')) return;
+      
+      try {
+        const response = await fetch(\`/api/user-images?id=\${imageId}\`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error(await response.text());
+        
+        // Refresh the images grid
+        manageImages(currentSubdomain);
+      } catch (error) {
+        alert('Failed to delete image: ' + error.message);
+      }
+    }
 
     async function manageDomains(subdomain) {
       currentSubdomain = subdomain;
@@ -227,7 +355,6 @@ const template = (sites: Site[]) => {
       }
     }
 
-    
     async function checkNameAvailability(name) {
         const indicator = document.getElementById('availability-indicator');
         const available = document.getElementById('available');

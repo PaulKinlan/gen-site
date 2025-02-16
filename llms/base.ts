@@ -1,8 +1,15 @@
+export type LLMImage = {
+  type: "base64";
+  media_type: string;
+  data: string;
+};
+
 export type LLMInput = {
   system: string[];
   files: string[]; // The files that are being referenced
   context: string[]; // The context that is being imported (i.e, @url)
   prompt: string;
+  images?: LLMImage[]; // Images to include in the prompt
 };
 
 export interface LLMProvider {

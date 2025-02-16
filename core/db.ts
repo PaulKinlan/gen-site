@@ -5,6 +5,7 @@ import {
   CustomDomain,
   ImageGenerationContext,
   PromptLog,
+  UserImage,
 } from "../types.ts";
 
 const kv = await Deno.openKv();
@@ -13,13 +14,19 @@ type UrlsForSite = {
   [subdomain: string]: string[];
 };
 export const db = {
-  async logPrompt(prompt: string, system: string, site: Site): Promise<void> {
+  async logPrompt(
+    prompt: string,
+    system: string,
+    site: Site,
+    images?: UserImage[]
+  ): Promise<void> {
     const key = ["prompt_log", site.subdomain, Date.now().toString()];
     const log: PromptLog = {
       prompt,
       system,
       site,
       timestamp: new Date(),
+      images,
     };
 
     await kv.set(key, log, {
@@ -286,5 +293,38 @@ export const db = {
     if (!userId.value) return null;
     const user = await kv.get<User>(["users", userId.value]);
     return user.value;
+  },
+
+  // User Images
+  async saveUserImage(image: UserImage): Promise<void> {
+    await kv.set(["user_images", image.subdomain, image.id], image);
+  },
+
+  async getUserImage(
+    subdomain: string,
+    imageId: string
+  ): Promise<UserImage | null> {
+    const result = await kv.get<UserImage>(["user_images", subdomain, imageId]);
+    return result.value;
+  },
+
+  async getUserImages(subdomain: string): Promise<UserImage[]> {
+    const images: UserImage[] = [];
+    const iter = kv.list<UserImage>({
+      prefix: ["user_images", subdomain],
+    });
+    for await (const entry of iter) {
+      images.push(entry.value);
+    }
+    return images.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
+  async deleteUserImage(subdomain: string, imageId: string): Promise<void> {
+    const image = await this.getUserImage(subdomain, imageId);
+    if (!image) return;
+
+    const atomic = kv.atomic();
+    atomic.delete(["user_images", subdomain, imageId]);
+    await atomic.commit();
   },
 };

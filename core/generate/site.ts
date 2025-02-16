@@ -1,5 +1,9 @@
 import { db } from "@makemy/core/db.ts";
-import { LLMInput, UnsupportedOperationError } from "@makemy/llms/base.ts";
+import {
+  LLMInput,
+  LLMImage,
+  UnsupportedOperationError,
+} from "@makemy/llms/base.ts";
 import { getLLMProvider } from "@makemy/llms/factory.ts";
 import {
   ImageGenerationContext,
@@ -7,10 +11,12 @@ import {
   Site,
   SupportedContentType,
 } from "@makemy/types.ts";
+import { StorageService } from "@makemy/core/storage.ts";
 import { isMediaFile } from "@makemy/utils/contentType.ts";
 import { DOMParser } from "jsr:@b-fuze/deno-dom";
 import * as htmlparser2 from "@victr/htmlparser2";
-import subdomain from "@makemy/routes/subdomain/index.ts";
+import { encodeBase64 } from "@std/encoding";
+
 // Site generation helper
 
 export const additionalPromptForContentType: Record<string, string> = {
@@ -68,6 +74,9 @@ async function processGeneratedImages(
     }
   }
 
+  if (!doc.documentElement) {
+    throw new Error("Failed to parse HTML document");
+  }
   return doc.documentElement.outerHTML;
 }
 
@@ -90,7 +99,7 @@ async function parseHtmlStreamForGeneratedImages(
           return; // Skip this image.
         }
 
-        const image: GeneratedImage = {
+        const image: ImageGenerationContext = {
           prompt: context,
           alt,
           path: src,
@@ -261,6 +270,8 @@ export async function generateSiteContent(
   You will have access to the content of the previous requests in the <file> tags. Each <file> representing a different path or asset on the site. Use this context to build the file in a consistent style across the site.
 
   You will also have access to the extracted context from the imported URLs in a <context> tag which represents a different URL that the user would you to reference.
+
+  Use the up
   
   Today's date: ${new Date().toDateString()}`;
 
@@ -278,8 +289,42 @@ export async function generateSiteContent(
     return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
   });
 
+  // Get user images
+  const userImages = await db.getUserImages(site.subdomain);
+  const imageData: { [key: string]: Uint8Array } = {};
+
+  // Load image data for all user images
+  for (const image of userImages) {
+    // This will either download the image from the cache, or from the storage bucket
+    const data = await StorageService.downloadImage(site.subdomain, image.id);
+    if (data) {
+      imageData[image.id] = data;
+    }
+  }
+
+  // Create base64 encoded images for Claude
+  const images = await Promise.all(
+    Object.entries(imageData).map(([id, data]) => {
+      const image = userImages.find((img) => img.id === id);
+      if (!image) return null;
+
+      return {
+        type: "base64" as const,
+        media_type: image.mimeType as
+          | "image/jpeg"
+          | "image/png"
+          | "image/gif"
+          | "image/webp",
+        data: encodeBase64(data),
+      };
+    })
+  );
+
   const prompt: LLMInput = {
-    system: [system],
+    system: [
+      system,
+      "You have access to user-uploaded images. Use these images to enhance the site layout and design.",
+    ],
     files: previousRequestContext,
     context: importedContext,
     prompt: `<prompt>
@@ -287,14 +332,17 @@ export async function generateSiteContent(
   </prompt>
    
    Create a ${contentType} file for the path '${path}' using the description in <prompt>.`,
+    images: images.filter(
+      (img): img is NonNullable<typeof img> => img !== null
+    ),
   };
 
   const llmProvider = getLLMProvider();
   const response = await llmProvider.generate(prompt);
   console.log("Response from LLM Provider", response);
 
-  // Log the prompt
-  await db.logPrompt(prompt.prompt, prompt.system.join("\n"), site);
+  // Log the prompt with any used images
+  await db.logPrompt(prompt.prompt, prompt.system.join("\n"), site, userImages);
   const tees = response.tee();
   const content = extractContentFromMarkdownStream(tees[0], contentType);
   let imageTees = content.tee();
