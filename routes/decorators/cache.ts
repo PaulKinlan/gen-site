@@ -41,9 +41,9 @@ export function cache({ cache }: { cache: Cache }) {
       }
 
       // Skip cache for localhost
-      // if (subdomain === "localhost") {
-      //   return originalMethod.apply(this, args);
-      // }
+      if (subdomain === "localhost") {
+        return originalMethod.apply(this, args);
+      }
 
       console.log("Cache name", `${subdomain}:${site?.versionUuid}`);
       const subdomainCache = await caches.open(

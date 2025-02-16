@@ -98,6 +98,7 @@ export class ClaudeProvider implements LLMProvider {
     const client = new Anthropic({ apiKey: this.apiKey });
 
     console.log("System messages", system);
+    console.log("Images", prompt.images);
     console.log("Prompt", prompt.prompt);
 
     // Add text prompt
@@ -123,6 +124,7 @@ export class ClaudeProvider implements LLMProvider {
       async start(controller) {
         console.log("Starting stream: Claude");
         for await (const event of stream) {
+          console.log(event);
           if (
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
