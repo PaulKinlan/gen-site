@@ -50,7 +50,7 @@ export function cache({ cache }: { cache: Cache }) {
       );
 
       console.log("Checking cache for", subdomain, req.url);
-      const cachedResponse = await subdomainCache.match(req);
+      const cachedResponse = await subdomainCache.match(url);
 
       if (cachedResponse) {
         console.log("Returning cached response for", subdomain, req.url);
@@ -61,14 +61,19 @@ export function cache({ cache }: { cache: Cache }) {
 
       // Only cache successful responses
       if (response.status === 200) {
-        console.log("Caching response for", subdomain, req.url);
+        console.log(
+          "Caching response for",
+          subdomain,
+          req.url,
+          site?.versionUuid
+        );
         if (isMedia == false) {
           // remove this later date
           const path = url.pathname;
           const cacheKey = [subdomain, path];
           cache.set(cacheKey, ""); // The old cache is now just so we know candidate previous requests (wait until matchAll is avaliable)
         }
-        await subdomainCache.put(req, response.clone());
+        await subdomainCache.put(url, response.clone());
       }
 
       return response;
