@@ -69,7 +69,7 @@ export class ClaudeProvider implements LLMProvider {
 
     system.push({
       type: "text",
-      text: "Context from previous requests:\n",
+      text: "Context from previous requests:\n<files>",
     });
 
     console.log("Files", prompt.files.length);
@@ -84,9 +84,11 @@ export class ClaudeProvider implements LLMProvider {
       })
     );
 
+    system.push({ type: "text", text: "</files>" });
+
     system.push({
       type: "text",
-      text: "Imported context for @url references:\n",
+      text: "Imported context for @url references:\n<contexts>",
     });
 
     system.push(
@@ -98,10 +100,12 @@ export class ClaudeProvider implements LLMProvider {
       })
     );
 
+    system.push({ type: "text", text: "</contexts>" });
+
     const client = new Anthropic({ apiKey: this.apiKey });
 
     console.log("System messages", system);
-    console.log("Images", prompt.images);
+    console.log("Images", prompt.images?.length);
     console.log("Prompt", prompt.prompt);
 
     // Add text prompt

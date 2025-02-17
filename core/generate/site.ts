@@ -207,7 +207,7 @@ ${additionalPromptForContentType[contentType]}
 
 Do not create the other files for this site, only the ${contentType.toLocaleUpperCase()} file for the path '${path}'.
 
-You MUST ensure that the site is consistent. To ensure consistency you MUST use the content of previous requests defined in the <file> tags to create your response. 
+You MUST ensure that the site is consistent. To ensure consistency you MUST use the content of previous requests defined in <files>. Each <file> in <files> relates to a previous request and contains important content and context that should be used to generate your response.
 
 Use the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
@@ -224,11 +224,11 @@ If you need to use the date, today's date is: ${new Date().toDateString()}
     .map((req) => {
       console.log(req.path, path);
       console.log("Request", req.path, req.value.content.length);
-      return `\t<file name="${req.path}">\n${req.value.content}\n</file>`;
+      return `\t<file name="${req.path}">${req.value.content}</file>`;
     });
 
   const importedContext = context.importedContext.map((ctx) => {
-    return `\t<context name="@url ${ctx.url} "url="${ctx.url}">${ctx.markdown}</context>`;
+    return `\t<context name="@url ${ctx.url}" url="${ctx.url}">${ctx.markdown}</context>`;
   });
 
   // Get user images
