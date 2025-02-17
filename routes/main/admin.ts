@@ -5,41 +5,34 @@ import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { generatePrompt } from "@makemy/routes/main/admin/resources/prompts.ts";
 import { clearCacheForSite } from "@makemy/core/cache.ts";
+import { getAssetContent } from "@makemy/utils/assets.ts";
 
 const kv = await Deno.openKv();
 
-const template = (sites: Site[]) => {
-  const siteList = sites
-    .map(
-      (site) => `
-    <div>
-      <div class="mt-1">
-        <div class="flex justify-between items-center">
-          <p><a href="https://${escapeHtml(
-            site.subdomain
-          )}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${escapeHtml(
-        site.subdomain
-      )}.itsmy.blog</a></p>
-          <div class="flex gap-4">
-            <a href="/admin/edit?subdomain=${escapeHtml(
-              site.subdomain
-            )}" class="text-blue-600 hover:text-blue-800">Edit</a>
-            <button onclick="manageImages('${escapeHtml(
-              site.subdomain
-            )}')" class="text-blue-600 hover:text-blue-800">Images</button>
-            <button onclick="manageDomains('${escapeHtml(
-              site.subdomain
-            )}')" class="text-blue-600 hover:text-blue-800">Domains</button>
-            <button onclick="deleteSite('${escapeHtml(
-              site.subdomain
-            )}')" class="text-red-600 hover:text-red-800">Delete</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
-    )
-    .join("");
+const template = async (sites: Site[]) => {
+  const siteList: string[] = [];
+  for (const site of sites) {
+    siteList.push(`<tr>
+    <td><a href="https://${escapeHtml(
+      site.subdomain
+    )}.itsmy.blog" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${escapeHtml(
+      site.subdomain
+    )}.itsmy.blog</a></td>
+    <td>${site.prompt?.substring(0, 100) || ""}</td>
+    <td class="text-right"><a href="/admin/edit?subdomain=${escapeHtml(
+      site.subdomain
+    )}" class="text-blue-600 hover:text-blue-800 inline-block">${await getAssetContent(
+      "assets/images/edit.svg"
+    )}</a>
+        <button onclick="deleteSite('${escapeHtml(
+          site.subdomain
+        )}')" class="text-red-600 hover:text-red-800 inline-block">${await getAssetContent(
+      "assets/images/delete.svg"
+    )}</button></td>
+</tr>`);
+  }
+
+  const joinedSiteList = siteList.join("\n");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -67,293 +60,69 @@ const template = (sites: Site[]) => {
         <div class="px-4 py-6 sm:px-0 h-full">
             <div class="border-4 border-dashed border-gray-200 rounded-lg p-6 flex flex-col h-full">
                 <h2 class="text-2xl font-bold mb-6">Create New Site</h2>
-                <form id="create-site-form" class="space-y-3 flex flex-col grow" method="post" enctype="multipart/form-data">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">
-                            Site Name
-                        </label>
-                        <div class="mt-1 flex">
-                            <div class="flex-1 flex items-center">
-                                <input type="text" id="subdomain" name="subdomain"
-                                    class="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md 
-                                    shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    placeholder="Enter a name or generate one">
-                                <span id="availability-indicator" class="ml-2 hidden">
-                                    <span id="available" class="text-green-600 hidden">✓</span>
-                                    <span id="unavailable" class="text-red-600 hidden">✗</span>
-                                </span>
-                            </div>
-                            <button type="button" id="generate-name"
-                                class="ml-3 inline-flex items-center px-4 py-2 border border-transparent 
-                                text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                                Generate
-                            </button>
+                <dialog id="generateNameDialog" class="p-4 rounded-lg shadow-lg backdrop:bg-gray-500/50 w-1/2" aria-labelledby="generateNameDialogLabel" role="dialog" aria-modal="true">
+                <h3>Choose a domain for your site</h3>  
+                    <form class="space-y-3 flex flex-col grow" method="post">                      
+                      <div class="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm px-2 py-2 ">
+                        <div class="flex-1 flex">
+                            <input type="text" id="subdomain" name="subdomain"
+                                class="flex-1 block w-full sm:text-sm"
+                                placeholder="Enter a name or generate one" required>
+                            <span id="availability-indicator" class="ml-2 hidden">
+                                <span id="available" class="text-green-600 hidden">✓</span>
+                                <span id="unavailable" class="text-red-600 hidden">✗</span>
+                            </span>
                         </div>
-                    </div>
-
-                    <div class="flex flex-col grow">
-                        <label class="block text-sm font-medium text-gray-700">
-                            Site Prompt
-                        </label>
-                        <div class="mt-1 grow h-full">
-                            <textarea id="prompt" name="prompt" rows="4" required
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm grow h-full"
-                                placeholder="${escapeHtml(
-                                  generatePrompt()
-                                )}"></textarea>
-                        </div>
-                    </div>
-
-                    <div>
-                        <button type="submit"
-                            class="w-full flex justify-center py-2 px-4 border border-transparent 
-                            rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 
-                            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
-                            focus:ring-blue-500">
-                            Create Site
+                        <button type="button" id="generate-name"
+                            class="ml-3 inline-flex items-center px-4 py-2 border border-transparent 
+                            text-sm font-medium rounded-md text-white  bg-gray-400 hover:bg-blue-700">
+                            ${await getAssetContent(
+                              "assets/images/refresh.svg"
+                            )}
                         </button>
-                    </div>
-                </form>
-
-                <br>
-                <hr>
-                <br>
-
-                <h2 class="text-2xl font-bold mb-6">Your Sites</h2>
-
-                ${siteList}
+                      </div>
+                      <button type="submit"
+                        class="w-full flex justify-center py-2 px-4 border border-transparent 
+                        rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 
+                        hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                        focus:ring-blue-500">
+                        Create
+                    </button>
+                      <input type="hidden" name="prompt" value="">
+                      </form>
+                </dialog>
+                <div>
+                <button type="submit"
+                    id="createSite"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent 
+                    rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 
+                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                    focus:ring-blue-500">
+                    Create Site
+                </button>
             </div>
+
+        <h2 class="text-2xl font-bold mb-6">Your Sites</h2>
+    
+        <table class="table-fixed">
+          <thead>
+            <tr>
+            <th class="text-left w-1/3">Domain</th>
+            <th class="text-left">Prompt</th>
+            <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+              ${joinedSiteList}
+          </tbody>
+        </table>
         </div>
-    </div>
-
-    <!-- Image Management Modal -->
-    <div id="image-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
-      <div class="flex min-h-full items-center justify-center">
-        <div class="bg-white rounded-lg p-6 max-w-4xl w-full">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">Manage Images</h3>
-            <button onclick="closeImageModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
-          </div>
-          
-          <div id="images-grid" class="grid grid-cols-3 gap-4 mb-4">
-            <!-- Images will be listed here -->
-          </div>
-
-          <form id="upload-image-form" class="mb-4">
-            <div class="flex gap-2">
-              <label class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                          text-center cursor-pointer hover:bg-gray-50">
-                <input type="file" accept="image/*" id="image-upload" class="hidden">
-                <input type="hidden" name="subdomain" value="{subdomain}">
-                Upload Image
-              </label>
-            </div>
-          </form>
-
-          <div class="text-sm text-gray-600">
-            <p class="mb-2">Image Guidelines:</p>
-            <ul class="list-disc list-inside space-y-1">
-              <li>Supported formats: JPEG, PNG, GIF, WebP</li>
-              <li>Maximum size: 10MB</li>
-              <li>Recommended dimensions: 2048x2048 pixels or smaller</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Domain Management Modal -->
-    <div id="domain-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
-      <div class="flex min-h-full items-center justify-center">
-        <div class="bg-white rounded-lg p-6 max-w-2xl w-full">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">Manage Custom Domains</h3>
-            <button onclick="closeDomainModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
-          </div>
-          
-          <div id="domains-list" class="mb-4">
-            <!-- Domains will be listed here -->
-          </div>
-
-          <form id="add-domain-form" class="mb-4">
-            <div class="flex gap-2">
-              <input type="text" id="new-domain" placeholder="example.com" 
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-              <button type="submit" 
-                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Add Domain
-              </button>
-            </div>
-          </form>
-
-          <div class="text-sm text-gray-600">
-            <p class="mb-2">To connect your domain:</p>
-            <ol class="list-decimal list-inside space-y-1">
-              <li>Add your domain above</li>
-              <li>Create a APEX record pointing to <code>99.83.186.151</code> and <code>75.2.96.173.</code></li>
-              <li>Wait for DNS propagation (may take up to 24 hours)</li>
-            </ol>
-          </div>
-        </div>
-      </div>
     </div>
 
     <script>
     let checkNameTimeout;
     let currentSubdomain;
 
-    async function manageImages(subdomain) {
-      currentSubdomain = subdomain;
-      const modal = document.getElementById('image-modal');
-      const imagesGrid = document.getElementById('images-grid');
-      modal.classList.remove('hidden');
-      
-      // Fetch and display images
-      try {
-        const response = await fetch('/api/user-images?subdomain=' + subdomain);
-        const images = await response.json();
-        
-        imagesGrid.innerHTML = images?.length 
-          ? images.map(image => \`
-              <div class="relative group">
-                <img src="/api/user-images?id=\${image.id}" 
-                     alt="\${image.filename}"
-                     class="w-[150px] h-[150px] object-cover rounded-lg border border-gray-200"
-                     title="Original size: \${image.width}x\${image.height}">
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
-                  <button onclick="deleteImage('\${image.id}')" 
-                    class="text-white opacity-0 group-hover:opacity-100 transition-all bg-red-600 hover:bg-red-700 px-3 py-1 rounded">
-                    Delete
-                  </button>
-                </div>
-              </div>
-            \`).join('')
-          : '<p class="text-gray-500 col-span-3 text-center py-4">No images uploaded yet</p>';
-      } catch (error) {
-        console.error('Error fetching images:', error);
-        imagesGrid.innerHTML = '<p class="text-red-500 col-span-3 text-center py-4">Failed to load images</p>';
-      }
-    }
-
-    function closeImageModal() {
-      document.getElementById('image-modal').classList.add('hidden');
-    }
-
-    document.getElementById('image-upload').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const formData = new FormData();
-      formData.append('image', file);
-
-      try {
-        const response = await fetch('/api/user-images', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!response.ok) throw new Error(await response.text());
-        
-        // Refresh the images grid
-        manageImages(currentSubdomain);
-        
-        // Clear the file input
-        e.target.value = '';
-      } catch (error) {
-        alert('Failed to upload image: ' + error.message);
-      }
-    });
-
-    async function deleteImage(imageId) {
-      if (!confirm('Are you sure you want to delete this image?')) return;
-      
-      try {
-        const response = await fetch(\`/api/user-images?id=\${imageId}\`, {
-          method: 'DELETE'
-        });
-        
-        if (!response.ok) throw new Error(await response.text());
-        
-        // Refresh the images grid
-        manageImages(currentSubdomain);
-      } catch (error) {
-        alert('Failed to delete image: ' + error.message);
-      }
-    }
-
-    async function manageDomains(subdomain) {
-      currentSubdomain = subdomain;
-      const modal = document.getElementById('domain-modal');
-      const domainsList = document.getElementById('domains-list');
-      modal.classList.remove('hidden');
-      
-      // Fetch and display domains
-      try {
-        const response = await fetch(\`/admin/domains?subdomain=\${subdomain}\`);
-        const { customDomains } = await response.json();
-        
-        domainsList.innerHTML = customDomains?.length 
-          ? customDomains.map(domain => \`
-              <div class="flex justify-between items-center p-2 border-b">
-                <div>
-                  <p class="font-medium">\${domain.host}</p>
-                  <p class="text-sm text-gray-500">Status: \${domain.status}</p>
-                </div>
-                <button onclick="removeDomain('\${domain.host}')" 
-                  class="text-red-600 hover:text-red-800">Remove</button>
-              </div>
-            \`).join('')
-          : '<p class="text-gray-500">No custom domains configured</p>';
-      } catch (error) {
-        console.error('Error fetching domains:', error);
-        domainsList.innerHTML = '<p class="text-red-500">Failed to load domains</p>';
-      }
-    }
-
-    function closeDomainModal() {
-      document.getElementById('domain-modal').classList.add('hidden');
-      currentSubdomain = null;
-    }
-
-    document.getElementById('add-domain-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const input = document.getElementById('new-domain');
-      const domain = input.value.trim();
-      
-      if (!domain) return;
-      
-      try {
-        const response = await fetch('/admin/domains', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subdomain: currentSubdomain, domain })
-        });
-        
-        if (!response.ok) throw new Error(await response.text());
-        
-        input.value = '';
-        manageDomains(currentSubdomain); // Refresh the list
-      } catch (error) {
-        alert('Failed to add domain: ' + error.message);
-      }
-    });
-
-    async function removeDomain(host) {
-      if (!confirm('Are you sure you want to remove this domain?')) return;
-      
-      try {
-        const response = await fetch(\`/admin/domains?subdomain=\${currentSubdomain}&host=\${host}\`, {
-          method: 'DELETE'
-        });
-        
-        if (!response.ok) throw new Error(await response.text());
-        
-        manageDomains(currentSubdomain); // Refresh the list
-      } catch (error) {
-        alert('Failed to remove domain: ' + error.message);
-      }
-    }
 
     async function checkNameAvailability(name) {
         const indicator = document.getElementById('availability-indicator');
@@ -400,6 +169,16 @@ const template = (sites: Site[]) => {
         }, 300);
     });
 
+    const createSiteButton = document.getElementById('createSite');
+    createSiteButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      const dialog = document.getElementById('generateNameDialog');
+      console.log(dialog);
+      dialog.showModal();
+      const input = dialog.querySelector('input[name="subdomain"]');
+      input.focus();
+    });
+
     document.getElementById('generate-name').addEventListener('click', async () => {
         const response = await fetch('/api/generate-name');
         const { subdomain } = await response.json();
@@ -436,7 +215,7 @@ export default new (class extends BaseHandler {
   override async get(req: Request): Promise<Response> {
     const sites = await db.getSites(req.extraInformation?.userId || "");
 
-    return new Response(template(sites), {
+    return new Response(await template(sites), {
       headers: { "Content-Type": "text/html" },
     });
   }
@@ -448,7 +227,7 @@ export default new (class extends BaseHandler {
       const subdomain = data.get("subdomain")?.toString();
       const prompt = data.get("prompt")?.toString();
 
-      if (!subdomain || !prompt) {
+      if (!subdomain) {
         throw new Error("Missing required fields");
       }
 
@@ -494,7 +273,10 @@ export default new (class extends BaseHandler {
       //   { message: "generate-site", site },
       //   { delay: 0 } // 1 hour delay
       // );
-      return Response.redirect(req.url, 303);
+      const url = new URL(req.url);
+      url.pathname = `/admin/edit`;
+      url.searchParams.set("subdomain", subdomain);
+      return Response.redirect(url, 303);
     } catch (error) {
       return new Response((error as Error).message, { status: 400 });
     }

@@ -4,10 +4,10 @@ import { db } from "@makemy/core/db.ts";
 import { authenticated } from "@makemy/routes/decorators/authenticated.ts";
 import { escapeHtml } from "https://deno.land/x/escape/mod.ts";
 import { clearCacheForSite } from "@makemy/core/cache.ts";
-
+import { getAssetContent } from "@makemy/utils/assets.ts";
 const kv = await Deno.openKv();
 
-const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
+const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -16,7 +16,7 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
 </head>
 <body class="bg-gray-50 h-dvh flex flex-col">
     <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex-shrink-0 flex items-center">
                     <a href="/admin" class="text-xl font-bold">makemy.blog</a>
@@ -27,6 +27,69 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
             </div>
         </div>
     </nav>
+
+    <dialog id="addImageDialog" class="p-4 rounded-lg shadow-lg backdrop:bg-gray-500/50 w-1/2">
+        <div class="mt-1">
+            <h3 class="text-lg font-medium">Images</h3>
+            <p>Upload images for the tool to use as inspiration.</p>
+            <div class="flex flex-wrap gap-4" id="imageGrid">
+                <!-- Images will be loaded here via JavaScript -->
+            </div>
+            <div class="mt-4">
+                <label class="inline-flex items-center px-4 py-2 border border-gray-300 
+                            shadow-sm text-sm font-medium rounded-md text-gray-700 
+                            bg-white hover:bg-gray-50 cursor-pointer">
+                    <input type="file" accept="image/*" id="imageUpload" class="hidden">
+                    Upload Image
+                </label>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="deleteImageDialog" class="p-4 rounded-lg shadow-lg backdrop:bg-gray-500/50">
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium">Delete Image</h3>
+            <p>Are you sure you want to delete this image?</p>
+            <div class="flex justify-end space-x-2">
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="this.closest('dialog').close()">Cancel</button>
+                <button id="confirmDeleteImage" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="addDomainDialog" class="p-4 rounded-lg shadow-lg backdrop:bg-gray-500/50">
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium">Add Domain</h3>
+            <div id="domains-list" class="space-y-2">
+            <!-- Domains will be loaded here via JavaScript -->
+            </div>
+            <input type="text" id="dialogDomain" placeholder="example.com" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <div class="mt-4 text-sm text-gray-600">
+                <p class="mb-2">To connect your domain:</p>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Add your domain above</li>
+                    <li>Create a APEX record pointing to <code>99.83.186.151</code> and <code>75.2.96.173</code></li>
+                    <li>Wait for DNS propagation (may take up to 24 hours)</li>
+                </ol>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="this.closest('dialog').close()">Cancel</button>
+                <button id="confirmAddDomain" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="removeDomainDialog" class="p-4 rounded-lg shadow-lg backdrop:bg-gray-500/50">
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium">Remove Domain</h3>
+            <p>Are you sure you want to remove this domain?</p>
+            <div class="flex justify-end space-x-2">
+                <button class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="this.closest('dialog').close()">Cancel</button>
+                <button id="confirmRemoveDomain" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Remove</button>
+            </div>
+        </div>
+    </dialog>
 
     <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 h-full w-full">
         <div class="px-4 py-6 sm:px-0 h-full">
@@ -42,58 +105,65 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
               site
                 ? `
             <div class="border-4 border-dashed border-gray-200 rounded-lg p-6 flex flex-col h-full">
-                <h2 class="text-2xl font-bold mb-6">Edit Site: ${escapeHtml(
-                  site.subdomain
-                )}</h2>
                 <form class="space-y-3 flex flex-col grow" method="post">
-                    <input type="hidden" name="subdomain" value="${escapeHtml(
-                      site.subdomain
-                    )}">
+                    <input type="hidden" name="subdomain">
+
+                    <div class="mt-1 flex">
+                        <h2 class="text-2xl font-bold mb-6 flex-row flex flex-1 items-center">
+                        Edit Site: 
+                        <input type="text" id="subdomain" name="subdomain"
+                                class="flex-1 block w-full px-3 py-2 border ml-2 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                placeholder="Enter a name or generate one" value="${escapeHtml(
+                                  site.subdomain
+                                )}" required>
+                        <span id="availability-indicator" class="ml-1 hidden">
+                            <span id="available" class="text-green-600 hidden">✓</span>
+                            <span id="unavailable" class="text-red-600 hidden">✗</span>
+                        </span>
+                        <button type="button" id="generate-name"
+                            class="ml-3 inline-flex items-center px-4 py-2 border border-transparent 
+                            text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                             ${await getAssetContent(
+                               "assets/images/refresh.svg"
+                             )}
+
+                        </button>
+                        </h2>
+                    </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">
-                            Preview URL
-                        </label>
-                        <div class="mt-1">
-                            <a href="https://${escapeHtml(
-                              site.subdomain
-                            )}.itsmy.blog" target="_blank" 
-                               class="text-blue-600 hover:text-blue-800 underline">
-                                ${escapeHtml(site.subdomain)}.itsmy.blog
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <label class="block text-sm font-medium text-gray-700">
-                            Images
-                        </label>
-                        <div class="mt-1">
-                            <div class="flex flex-wrap gap-4" id="imageGrid">
-                                <!-- Images will be loaded here via JavaScript -->
-                            </div>
-                            <div class="mt-4">
-                                <label class="inline-flex items-center px-4 py-2 border border-gray-300 
-                                            shadow-sm text-sm font-medium rounded-md text-gray-700 
-                                            bg-white hover:bg-gray-50 cursor-pointer">
-                                    <input type="file" accept="image/*" id="imageUpload" class="hidden">
-                                    Upload Image
-                                </label>
-                            </div>
-                        </div>
+                        <label class="text-sm font-medium text-gray-700">
+                            Preview URL:
+                        </label><a href="https://${escapeHtml(
+                          site.subdomain
+                        )}.itsmy.blog" target="_blank" 
+                               class="text-blue-600 hover:text-blue-800 underline">${escapeHtml(
+                                 site.subdomain
+                               )}.itsmy.blog/</a>
                     </div>
 
                     <div class="flex flex-col grow h-full">
                         <label class="block text-sm font-medium text-gray-700">
-                            Site Prompt
+                            Site Description
                         </label>
-                        <div class="mt-1 flex flex-col grow h-full">
+                        <div class="mt-1 flex flex-col grow h-full relative">
                             <textarea id="prompt" name="prompt" rows="4" required
                                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm grow h-full"
+                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm grow h-full flex-1"
                                 placeholder="Describe how your site should be generated...">${escapeHtml(
                                   site.prompt
                                 )}</textarea>
+                                <div class="flex flex-row absolute bottom-1 left-1">
+                                    <button class="cursor-pointer" id="addImageButton">${await getAssetContent(
+                                      "assets/images/images.svg"
+                                    )}</button>
+                                   
+                                    <button type="button" id="addDomainButton" >
+                                    ${await getAssetContent(
+                                      "assets/images/add-domain.svg"
+                                    )}
+                                </button>
+                                </div>
                         </div>
                     </div>
 
@@ -130,10 +200,15 @@ const template = (site: Site | null, error?: string) => `<!DOCTYPE html>
 document.addEventListener('DOMContentLoaded', function() {
     const imageGrid = document.getElementById('imageGrid');
     const imageUpload = document.getElementById('imageUpload');
+    const addDomainButton = document.getElementById('addDomainButton');
+    const addImageButton = document.getElementById('addImageButton');
     const subdomain = document.querySelector('input[name="subdomain"]').value;
+    let checkNameTimeout;
+    let currentDomainToRemove = '';
 
     // Load existing images
     async function loadImages() {
+        const subdomain = document.getElementById('subdomain').value;
         try {
             const response = await fetch('/api/user-images?subdomain=' + subdomain);
             if (!response.ok) throw new Error('Failed to load images');
@@ -162,6 +237,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle image upload
     imageUpload.addEventListener('change', async function(e) {
         const file = e.target.files[0];
+        const subdomain = document.getElementById('subdomain').value;
+
         if (!file) return;
 
         const formData = new FormData();
@@ -189,26 +266,192 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle image deletion
     window.deleteImage = async function(imageId) {
-        event.preventDefault(); 
-        if (!confirm('Are you sure you want to delete this image?')) return;
+        event.preventDefault();
+        const dialog = document.getElementById('deleteImageDialog');
+        const confirmBtn = document.getElementById('confirmDeleteImage');
+        const subdomain = document.getElementById('subdomain').value;
+
+        
+        const handleDelete = async () => {
+            try {
+                const response = await fetch(\`/api/user-images?id=\${imageId}&subdomain=\${subdomain}\`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Delete failed');
+                
+                // Reload images after successful deletion
+                await loadImages();
+                dialog.close();
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                alert('Failed to delete image. Please try again.');
+            }
+            confirmBtn.removeEventListener('click', handleDelete);
+        };
+
+        confirmBtn.addEventListener('click', handleDelete);
+        dialog.showModal();
+    };
+
+    async function checkNameAvailability(name) {
+        const indicator = document.getElementById('availability-indicator');
+        const available = document.getElementById('available');
+        const unavailable = document.getElementById('unavailable');
+        
+        if (!name) {
+            indicator.classList.add('hidden');
+            return;
+        }
+
+        // Check if the subdomain would form a valid URL
+        try {
+            new URL(\`https://\${name}.itsmy.blog\`);
+        } catch {
+            indicator.classList.remove('hidden');
+            available.classList.add('hidden');
+            unavailable.classList.remove('hidden');
+            return;
+        }
 
         try {
-            const response = await fetch(\`/api/user-images?id=\${imageId}&subdomain=\${subdomain}\`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) throw new Error('Delete failed');
+            const response = await fetch(\`/api/check-name?name=\${encodeURIComponent(name)}\`);
+            const data = await response.json();
             
-            // Reload images after successful deletion
-            await loadImages();
+            indicator.classList.remove('hidden');
+            if (data.available) {
+                available.classList.remove('hidden');
+                unavailable.classList.add('hidden');
+            } else {
+                available.classList.add('hidden');
+                unavailable.classList.remove('hidden');
+            }
         } catch (error) {
-            console.error('Error deleting image:', error);
-            alert('Failed to delete image. Please try again.');
+            console.error('Error checking name availability:', error);
+            indicator.classList.add('hidden');
         }
-    };
+    }
+
+    document.getElementById('subdomain').addEventListener('input', (e) => {
+        clearTimeout(checkNameTimeout);
+        checkNameTimeout = setTimeout(() => {
+            checkNameAvailability(e.target.value);
+        }, 300);
+    });
+
+    document.getElementById('generate-name').addEventListener('click', async () => {
+        const response = await fetch('/api/generate-name');
+        const { subdomain } = await response.json();
+        const input = document.getElementById('subdomain');
+        input.value = subdomain;
+        checkNameAvailability(subdomain);
+    });
 
     // Initial load
     loadImages();
+    loadDomains();
+
+    // Domain management
+    async function loadDomains() {
+        const domainsList = document.getElementById('domains-list');
+        const subdomain = document.getElementById('subdomain').value;
+        try {
+            console.log('Loading domains for', subdomain);
+            const response = await fetch('/admin/domains?subdomain=' + encodeURIComponent(subdomain));
+            const { customDomains } = await response.json();
+            
+            domainsList.innerHTML = customDomains?.length 
+                ? customDomains.map(domain => \`
+                    <div class="flex justify-between items-center p-2 border rounded">
+                        <div>
+                            <p class="font-medium">\${domain.host}</p>
+                            <p class="text-sm text-gray-500">Status: \${domain.status}</p>
+                        </div>
+                        <button onclick="removeDomain('\${domain.host}')" 
+                            class="text-red-600 hover:text-red-800">Remove</button>
+                    </div>
+                \`).join('')
+                : '<p class="text-gray-500">No custom domains configured</p>';
+        } catch (error) {
+            console.error('Error fetching domains:', error);
+            domainsList.innerHTML = '<p class="text-red-500">Failed to load domains</p>';
+        }
+    }
+
+    const showAddImageDialog = function(event) {
+        event.preventDefault();
+        const dialog = document.getElementById('addImageDialog');
+        const confirmBtn = document.getElementById('confirmAddImage');
+        const input = document.getElementById('dialogDomain');
+        const subdomain = document.getElementById('subdomain').value;
+
+        
+        dialog.showModal();
+    };
+
+    addImageButton.addEventListener('click', showAddImageDialog);
+
+    const showAddDomainDialog = function() {
+        const dialog = document.getElementById('addDomainDialog');
+        const confirmBtn = document.getElementById('confirmAddDomain');
+        const input = document.getElementById('dialogDomain');
+        const subdomain = document.getElementById('subdomain').value;
+
+        
+        const handleAdd = async () => {
+            const domain = input.value.trim();
+            if (!domain) return;
+            
+            try {
+                const response = await fetch('/admin/domains', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subdomain, domain })
+                });
+                
+                if (!response.ok) throw new Error(await response.text());
+                
+                input.value = '';
+                dialog.close();
+                loadDomains();
+            } catch (error) {
+                alert('Failed to add domain: ' + error.message);
+            }
+            confirmBtn.removeEventListener('click', handleAdd);
+        };
+
+        confirmBtn.addEventListener('click', handleAdd);
+        dialog.showModal();
+    };
+
+    addDomainButton.addEventListener('click', showAddDomainDialog);
+
+    const removeDomain = async function(host) {
+        const dialog = document.getElementById('removeDomainDialog');
+        const confirmBtn = document.getElementById('confirmRemoveDomain');
+        const subdomain = document.getElementById('subdomain').value;
+
+        currentDomainToRemove = host;
+        
+        const handleRemove = async () => {
+            try {
+                const response = await fetch('/admin/domains?subdomain=' + encodeURIComponent(subdomain) + '&host=' + encodeURIComponent(currentDomainToRemove), {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error(await response.text());
+                
+                dialog.close();
+                loadDomains();
+            } catch (error) {
+                alert('Failed to remove domain: ' + error.message);
+            }
+            confirmBtn.removeEventListener('click', handleRemove);
+        };
+
+        confirmBtn.addEventListener('click', handleRemove);
+        dialog.showModal();
+    };
 });
 </script>
 </body>
@@ -229,7 +472,7 @@ export default new (class extends BaseHandler {
     // Verify the site belongs to the user
     if (site && site.userId !== req.extraInformation?.userId) {
       return new Response(
-        template(null, "You don't have permission to edit this site"),
+        await template(null, "You don't have permission to edit this site"),
         {
           status: 403,
           headers: { "Content-Type": "text/html" },
@@ -237,7 +480,7 @@ export default new (class extends BaseHandler {
       );
     }
 
-    return new Response(template(site), {
+    return new Response(await template(site), {
       headers: { "Content-Type": "text/html" },
     });
   }
@@ -296,17 +539,11 @@ export default new (class extends BaseHandler {
         }
       }
 
-      // regenerate the site so the first load is quicker
-      // await kv.enqueue(
-      //   { message: "generate-site", site },
-      //   { delay: 0 } // 1 hour delay
-      // );
-
       baseUrl.pathname = "/admin";
       return Response.redirect(baseUrl, 303);
     } catch (error) {
       const site = await db.getSite("");
-      return new Response(template(site, (error as Error).message), {
+      return new Response(await template(site, (error as Error).message), {
         status: 400,
         headers: { "Content-Type": "text/html" },
       });
