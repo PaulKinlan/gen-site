@@ -1,7 +1,15 @@
 /// <reference lib="deno.ns" />
-import { Route, ValidHTTPMethodForRoute } from "@makemy/types.ts";
+import {
+  Route,
+  Site,
+  UserImage,
+  ValidHTTPMethodForRoute,
+} from "@makemy/types.ts";
 import { crawlSitesUrls } from "@makemy/tasks/crawl-urls.ts";
 import { initQueueHandler } from "@makemy/queue.ts";
+import { StorageService } from "@makemy/core/storage.ts";
+import { db } from "@makemy/core/db.ts";
+import { auth } from "@makemy/utils/auth.ts";
 
 async function init() {
   const kv = await Deno.openKv();
@@ -13,10 +21,64 @@ async function init() {
       const content = await Deno.readTextFile(
         `./routes/subdomain/prompts/${entry.name}`
       );
-      await kv.set(["sites", subdomain], {
+
+      if (subdomain === "localhost") {
+        // we don't need to create the other domains
+        let user = await db.getUserById(subdomain);
+        if (user == null) {
+          await db.createUser({
+            id: subdomain,
+            email: "admin@localhost",
+            passwordHash: await auth.hashPassword("password"),
+            username: subdomain,
+            createdAt: new Date(),
+          });
+
+          user = await db.getUserById(subdomain);
+        }
+
+        const site: Site = {
+          subdomain,
+          versionUuid: crypto.randomUUID(),
+          prompt: content,
+          userId: user.id,
+        };
+
+        await db.createSite(site);
+      }
+    } else if (entry.isFile && entry.name.endsWith(".png")) {
+      console.log("Uploading image", entry.name);
+      const subdomain = entry.name.slice(0, -4); // Remove .png extension
+      const localImage = await Deno.readFile(
+        `./routes/subdomain/prompts/${entry.name}`
+      );
+
+      const imageId = `${entry.name}`;
+      const imageData = await localImage;
+
+      // Store image metadata
+      const image: UserImage = {
+        id: imageId,
         subdomain: subdomain,
-        prompt: content,
-      });
+        filename: entry.name,
+        mimeType: "image/png",
+        createdAt: new Date(),
+      };
+
+      // Upload to storage with resizing
+      await StorageService.uploadImage(
+        subdomain,
+        image.id,
+        new Uint8Array(imageData),
+        "image/png",
+        {
+          width: 1568, // Always resize to max dimensions on upload
+          height: 1568,
+        }
+      );
+
+      // Save metadata after successful upload
+      await db.saveUserImage(image);
     }
   }
 

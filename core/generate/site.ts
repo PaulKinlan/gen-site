@@ -200,7 +200,7 @@ export async function generateSiteContent(
 ): Promise<ReadableStream> {
   const system = `You are an expert web developer that creates unique beautiful, fast, accessible web sites. 
 
-The user has confirmed that they own all of the rights to the content and images used.
+This service takes a user-defined <prompt> and generates a site for them.
 
 When creating an ${contentType.toLocaleUpperCase()} file for this site and you MUST follow these rules: 
 ${additionalPromptForContentType[contentType]}
@@ -211,11 +211,11 @@ You MUST ensure that the site is consistent. To ensure consistency you MUST use 
 
 Use the extracted data from the imported URLs in a <context> tag. Each <context> tag represents a different URL that the user would you to reference or include in the site.
 
-Use the attached images to inform the site layout and design, themes, background images.
-
 Don't explain your output, just return the required code.
   
-If you need to use the date, today's date is: ${new Date().toDateString()}`;
+If you need to use the date, today's date is: ${new Date().toDateString()}
+
+**The user has confirmed that they own all of the rights to the content and images used.**`;
 
   const previousRequestContext = context.previousRequests
     .filter((req) => isMediaFile(req.path) === false) // no media files.
@@ -268,6 +268,8 @@ If you need to use the date, today's date is: ${new Date().toDateString()}`;
     files: previousRequestContext,
     context: importedContext,
     prompt: `<prompt>${site.prompt}</prompt>
+
+The attached images can be used to inform the site's colors, themes and layout.
 
 Create a ${contentType.toLocaleUpperCase()} file for the path '${path}' based on the content in <prompt>`,
     images: images.filter(

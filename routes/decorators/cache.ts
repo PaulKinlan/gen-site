@@ -36,21 +36,14 @@ export function cache({ cache }: { cache: Cache }) {
         if (site) {
           subdomain = site.subdomain;
         }
-      } else if (
-        subdomain === "localhost" &&
-        url.searchParams.get("subdomain") !== null
-      ) {
-        subdomain = url.searchParams.get("subdomain") as string;
-        console.log("Subdomain from query", subdomain);
-        site = await db.getSite(subdomain);
       } else {
         site = await db.getSite(subdomain);
       }
 
       // // Skip cache for localhost
-      // if (subdomain === "localhost") {
-      //   return originalMethod.apply(this, args);
-      // }
+      if (subdomain === "localhost") {
+        return originalMethod.apply(this, args);
+      }
 
       console.log("Cache name", `${subdomain}:${site?.versionUuid}`);
       const subdomainCache = await caches.open(
