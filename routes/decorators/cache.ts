@@ -2,7 +2,6 @@ import { Cache } from "@makemy/core/cache.ts";
 import { getSiteFromHostname } from "@makemy/utils/hostname.ts";
 import { db } from "@makemy/core/db.ts";
 import { isMediaFile } from "@makemy/utils/contentType.ts";
-import { strictEqual } from "node:assert";
 
 const ENV_SaasDomainsAuthToken = Deno.env.get("SAAS_DOMAINS_AUTH_TOKEN");
 

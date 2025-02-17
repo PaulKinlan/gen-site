@@ -72,6 +72,7 @@ export class ClaudeProvider implements LLMProvider {
       text: "Context from previous requests:\n",
     });
 
+    console.log("Files", prompt.files.length);
     console.log("Files", prompt.files);
 
     system.push(
