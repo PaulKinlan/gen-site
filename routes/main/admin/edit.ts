@@ -21,6 +21,66 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
           transition: none !important;
           z-index: 1000;
         }
+
+        iframe.loading {
+            /* Initial inset shadow */
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                  inset 0 -1px 3px rgba(255, 255, 255, 0.7);
+      
+      /* Animation for the box-shadow */
+      animation: multicolorGlow 10s infinite;
+        }
+
+        @keyframes multicolorGlow {
+      0% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset 0 0 50px rgba(255, 0, 128, 0.4),    /* Pink */
+                    inset 0 0 80px rgba(128, 0, 255, 0.2);    /* Purple */
+      }
+      14% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset -30px 0 60px rgba(64, 224, 208, 0.4), /* Turquoise */
+                    inset 30px 0 80px rgba(255, 105, 180, 0.3); /* Hot Pink */
+      }
+      28% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset 0 -40px 70px rgba(255, 215, 0, 0.4), /* Gold */
+                    inset 0 40px 80px rgba(50, 205, 50, 0.3);  /* Lime Green */
+      }
+      42% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset 40px 0 80px rgba(0, 191, 255, 0.4),  /* Deep Sky Blue */
+                    inset -40px 0 70px rgba(255, 69, 0, 0.3);  /* Red-Orange */
+      }
+      56% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset 0 40px 80px rgba(138, 43, 226, 0.4), /* Blue Violet */
+                    inset 0 -40px 70px rgba(255, 165, 0, 0.3); /* Orange */
+      }
+      70% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset -40px 0 70px rgba(0, 250, 154, 0.4),  /* Medium Spring Green */
+                    inset 40px 0 80px rgba(255, 20, 147, 0.3);  /* Deep Pink */
+      }
+      84% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset 0 -40px 80px rgba(30, 144, 255, 0.4), /* Dodger Blue */
+                    inset 0 40px 70px rgba(255, 215, 0, 0.3);   /* Gold */
+      }
+      100% {
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                    inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+                    inset 0 0 50px rgba(255, 0, 128, 0.4),      /* Pink */
+                    inset 0 0 80px rgba(128, 0, 255, 0.2);      /* Purple */
+      }
+    }
     
         #edit-panel {
           transition: all 0.1s ease;
@@ -234,6 +294,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const panelHandle = document.getElementById('panel-handle');
     const minimizeBtn = document.getElementById('minimize-panel');
     const iframe = document.getElementById('site-preview');
+
+    iframe.addEventListener('load', function() {
+        iframe.classList.remove('loading');
+    });
+
+    // Generate vibrant RGB colors
+    function randomRGB() {
+      return \`\${Math.floor(Math.random() * 256)}, \${Math.floor(Math.random() * 256)}, \${Math.floor(Math.random() * 256)}\`;
+    }
+    
+    function fluctuateBoxShadow() {
+      // Get dynamic colors
+      const color1 = randomRGB();
+      const color2 = randomRGB();
+      const color3 = randomRGB();
+      
+      // Calculate random offsets for organic movement
+      const time = Date.now();
+      const offsetX1 = Math.sin(time / 1200) * 40;
+      const offsetY1 = Math.cos(time / 1500) * 30;
+      const offsetX2 = Math.sin(time / 1800) * 35;
+      const offsetY2 = Math.cos(time / 2000) * 45;
+      const offsetX3 = Math.sin(time / 2200) * 50;
+      const offsetY3 = Math.cos(time / 1300) * 25;
+      
+      // Apply multiple shadows with different colors
+      const customShadow = \`
+        inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+        inset 0 -1px 3px rgba(255, 255, 255, 0.7),
+        inset \${offsetX1}px \${offsetY1}px 60px rgba(\${color1}, 0.4),
+        inset \${offsetX2}px \${offsetY2}px 80px rgba(\${color2}, 0.3),
+        inset \${offsetX3}px \${offsetY3}px 70px rgba(\${color3}, 0.35)
+     \`;
+      
+      iframe.style.boxShadow = customShadow;
+
+
+      if(iframe.classList.contains('loading')) {
+        requestAnimationFrame(fluctuateBoxShadow);
+      }
+    }
     
     let isDragging = false;
     let offsetX, offsetY;
@@ -356,17 +457,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.body.appendChild(successMsg);
                     
                     // Reload the iframe
+                    iframe.classList.add('loading');
                     iframe.src = iframe.src;
+                    fluctuateBoxShadow();
                     
                     // Remove success message after 3 seconds
                     setTimeout(() => {
                         successMsg.remove();
                     }, 3000);
-                    
-                    // Redirect to admin page after successful save
-                    setTimeout(() => {
-                        window.location.href = '/admin';
-                    }, 3500);
                 } else {
                     throw new Error('Failed to save changes');
                 }
