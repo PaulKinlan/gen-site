@@ -138,7 +138,7 @@ export class ClaudeProvider implements LLMProvider {
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
           ) {
-            console.log(event.delta.text);
+            //console.log(event.delta.text);
             controller.enqueue(event.delta.text);
           } else if (event.type === "message_stop") {
             controller.close();
