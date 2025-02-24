@@ -151,14 +151,13 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
                         <label class="block text-sm font-medium text-gray-700">
                             Site Description
                         </label>
-                        <div class="mt-1 flex flex-col relative">
+                        <div class="mt-1 flex flex-col px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white">
                             <textarea id="prompt" name="prompt" rows="6" required
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                class="block w-full "
                                 placeholder="Describe how your site should be generated...">${escapeHtml(
                                   site.prompt
                                 )}</textarea>
-                                <div class="flex flex-row absolute bottom-1 left-1">
+                                <div class="flex flex-row">
                                     <button class="cursor-pointer" id="addImageButton">${await getAssetContent(
                                       "assets/images/images.svg"
                                     )}</button>
