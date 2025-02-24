@@ -14,7 +14,7 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
     <title>Edit Site - makemy.blog</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 h-dvh flex flex-col">
+<body class="bg-gray-50 h-dvh flex flex-col overflow-hidden">
     <nav class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -91,8 +91,8 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
         </div>
     </dialog>
 
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 h-full w-full">
-        <div class="px-4 py-6 sm:px-0 h-full">
+    <div class="h-full w-full relative">
+        <div class="h-full">
             ${
               error
                 ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -104,12 +104,19 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
             ${
               site
                 ? `
-            <div class="border-4 border-dashed border-gray-200 rounded-lg p-6 flex flex-col h-full">
-                <form class="space-y-3 flex flex-col grow" method="post">
+            <div class="h-full">
+                <!-- iframe to show the site being edited -->
+                <iframe id="site-preview" class="w-full h-full border-0" src="https://${escapeHtml(
+                  site.subdomain
+                )}.itsmy.blog" title="Site Preview"></iframe>
+                
+                <!-- Floating edit panel -->
+                <div class="absolute top-4 right-4 w-1/3 bg-white bg-opacity-95 shadow-lg rounded-lg p-4 max-h-[80vh] overflow-y-auto">
+                    <form class="space-y-3 flex flex-col" method="post" id="edit-form">
                     <input type="hidden" name="subdomain">
 
-                    <div class="mt-1 flex">
-                        <h2 class="text-2xl font-bold mb-6 flex-row flex flex-1 items-center">
+                    <div class="flex">
+                        <h2 class="text-lg font-bold mb-3 flex-row flex flex-1 items-center">
                         Edit Site: 
                         <input type="text" id="subdomain" name="subdomain"
                                 class="flex-1 block w-full px-3 py-2 border ml-2 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -142,14 +149,14 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
                                )}.itsmy.blog/</a>
                     </div>
 
-                    <div class="flex flex-col grow h-full">
+                    <div class="flex flex-col">
                         <label class="block text-sm font-medium text-gray-700">
                             Site Description
                         </label>
-                        <div class="mt-1 flex flex-col grow h-full relative">
-                            <textarea id="prompt" name="prompt" rows="4" required
+                        <div class="mt-1 flex flex-col relative">
+                            <textarea id="prompt" name="prompt" rows="6" required
                                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm grow h-full flex-1"
+                                focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                 placeholder="Describe how your site should be generated...">${escapeHtml(
                                   site.prompt
                                 )}</textarea>
@@ -167,14 +174,14 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
                         </div>
                     </div>
 
-                    <div class="flex justify-between">
+                    <div class="flex justify-between mt-3">
                         <a href="/admin" 
                            class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm 
                                   font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 
                                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Cancel
                         </a>
-                        <button type="submit"
+                        <button type="submit" id="save-button"
                             class="inline-flex justify-center py-2 px-4 border border-transparent 
                             rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 
                             hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
@@ -182,7 +189,8 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
                             Save Changes
                         </button>
                     </div>
-                </form>
+                    </form>
+                </div>
             </div>
             `
                 : `
@@ -198,6 +206,74 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
     </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Toggle panel visibility
+    const editPanel = document.querySelector('.absolute.top-4.right-4');
+    const minimizeBtn = document.createElement('button');
+    minimizeBtn.innerHTML = '−';
+    minimizeBtn.className = 'absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-300 focus:outline-none';
+    minimizeBtn.title = 'Minimize panel';
+    
+    let isPanelMinimized = false;
+    const panelContent = document.getElementById('edit-form');
+    
+    minimizeBtn.addEventListener('click', function() {
+        if (isPanelMinimized) {
+            panelContent.style.display = 'flex';
+            minimizeBtn.innerHTML = '−';
+            minimizeBtn.title = 'Minimize panel';
+        } else {
+            panelContent.style.display = 'none';
+            minimizeBtn.innerHTML = '+';
+            minimizeBtn.title = 'Expand panel';
+        }
+        isPanelMinimized = !isPanelMinimized;
+    });
+    
+    editPanel.appendChild(minimizeBtn);
+    
+    // Handle form submission to reload iframe
+    const form = document.getElementById('edit-form');
+    const iframe = document.getElementById('site-preview');
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                // Show a success message
+                const successMsg = document.createElement('div');
+                successMsg.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded';
+                successMsg.innerHTML = 'Changes saved successfully! Reloading preview...';
+                document.body.appendChild(successMsg);
+                
+                // Reload the iframe
+                iframe.src = iframe.src;
+                
+                // Remove success message after 3 seconds
+                setTimeout(() => {
+                    successMsg.remove();
+                }, 3000);
+                
+                // Redirect to admin page after successful save
+                setTimeout(() => {
+                    window.location.href = '/admin';
+                }, 3500);
+            } else {
+                throw new Error('Failed to save changes');
+            }
+        } catch (error) {
+            console.error('Error saving changes:', error);
+            alert('Failed to save changes. Please try again.');
+        }
+    });
+    
     const imageGrid = document.getElementById('imageGrid');
     const imageUpload = document.getElementById('imageUpload');
     const addDomainButton = document.getElementById('addDomainButton');
