@@ -115,7 +115,7 @@ export class ClaudeProvider implements LLMProvider {
     });
 
     const stream = await client.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-7-sonnet-20250219",
       max_tokens: 8192,
       system: system.join("\n"),
       messages: [
