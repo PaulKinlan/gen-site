@@ -22,7 +22,12 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
           z-index: 1000;
         }
 
-        iframe.loading {
+        #site-preview {
+            position: absolute;
+            z-index: -1;
+        }
+
+        #site-preview.loading {
             /* Initial inset shadow */
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
                   inset 0 -1px 3px rgba(255, 255, 255, 0.7);
@@ -328,11 +333,13 @@ document.addEventListener('DOMContentLoaded', function() {
         inset \${offsetX3}px \${offsetY3}px 70px rgba(\${color3}, 0.35)
      \`;
       
-      iframe.style.boxShadow = customShadow;
-
+      iframe.parentElement.style.boxShadow = customShadow;
 
       if(iframe.classList.contains('loading')) {
         requestAnimationFrame(fluctuateBoxShadow);
+      }
+      else {
+        iframe.parentElement.style.boxShadow = ''
       }
     }
     
