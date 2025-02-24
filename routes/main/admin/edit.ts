@@ -13,6 +13,19 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
     <meta charset="UTF-8">
     <title>Edit Site - makemy.blog</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Add styles for dragging */
+        .dragging {
+          user-select: none;
+          opacity: 0.95;
+          transition: none !important;
+          z-index: 1000;
+        }
+    
+        #edit-panel {
+          transition: all 0.1s ease;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 h-dvh flex flex-col overflow-hidden">
     <nav class="bg-white shadow-sm">
@@ -111,8 +124,21 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
                 )}.itsmy.blog" title="Site Preview"></iframe>
                 
                 <!-- Floating edit panel -->
-                <div class="absolute top-4 right-4 w-1/3 bg-white bg-opacity-95 shadow-lg rounded-lg p-4 max-h-[80vh] overflow-y-auto">
-                    <form class="space-y-3 flex flex-col" method="post" id="edit-form">
+                <div id="edit-panel" class="absolute top-4 right-4 w-1/3 bg-white bg-opacity-95 shadow-lg rounded-lg max-h-[80vh] overflow-y-auto">
+                    <!-- Panel header/drag handle -->
+                    <div id="panel-handle" class="bg-gray-100 p-2 rounded-t-lg flex justify-between items-center border-b cursor-move">
+                        <span class="font-medium text-gray-700">Edit Site</span>
+                        <div class="flex space-x-2">
+                            <button id="minimize-panel" type="button" class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-300 focus:outline-none">
+                                −
+                            </button>
+                        </div>
+                    </div>
+                    <form class="space-y-3 flex flex-col p-4" method="post" id="edit-form">
+                    <input type="hidden" name="subdomain" value="${escapeHtml(
+                      site.subdomain
+                    )}">
+
                     <div class="flex">
                         <h2 class="text-lg font-bold mb-3 flex-row flex flex-1 items-center">
                         Edit Site: 
@@ -203,142 +229,235 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
     </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle panel visibility
-    const editPanel = document.querySelector('.absolute.top-4.right-4');
-    const minimizeBtn = document.createElement('button');
-    minimizeBtn.innerHTML = '−';
-    minimizeBtn.className = 'absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-300 focus:outline-none';
-    minimizeBtn.title = 'Minimize panel';
+    // Make the panel draggable
+    const editPanel = document.getElementById('edit-panel');
+    const panelHandle = document.getElementById('panel-handle');
+    const minimizeBtn = document.getElementById('minimize-panel');
+    const iframe = document.getElementById('site-preview');
     
-    let isPanelMinimized = false;
-    const panelContent = document.getElementById('edit-form');
+    let isDragging = false;
+    let offsetX, offsetY;
     
-    minimizeBtn.addEventListener('click', function() {
-        if (isPanelMinimized) {
-            panelContent.style.display = 'flex';
-            minimizeBtn.innerHTML = '−';
-            minimizeBtn.title = 'Minimize panel';
-        } else {
-            panelContent.style.display = 'none';
-            minimizeBtn.innerHTML = '+';
-            minimizeBtn.title = 'Expand panel';
+    // Prevent iframe from capturing mouse events during drag
+    function toggleIframePointerEvents(disable) {
+        if (iframe) {
+            iframe.style.pointerEvents = disable ? 'none' : 'auto';
         }
-        isPanelMinimized = !isPanelMinimized;
+    }
+    
+    // Panel drag functionality - improved for smoother tracking
+    if (panelHandle) {
+        panelHandle.addEventListener('mousedown', function(e) {
+            // Only handle left mouse button
+            if (e.button !== 0) return;
+            
+            e.preventDefault();
+            isDragging = true;
+            
+            // Get the current position of the panel
+            if (editPanel) {
+                const rect = editPanel.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                
+                // Add a class to indicate dragging state
+                editPanel.classList.add('dragging');
+                
+                // Disable iframe pointer events during drag
+                toggleIframePointerEvents(true);
+            }
+        });
+    }
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging || !editPanel) return;
+        
+        e.preventDefault();
+        
+        // Calculate new position, accounting for scroll position
+        let x = e.clientX - offsetX;
+        let y = e.clientY - offsetY;
+        
+        // Constrain to viewport
+        const panelWidth = editPanel.offsetWidth;
+        const panelHeight = editPanel.offsetHeight;
+        const maxX = window.innerWidth - panelWidth;
+        const maxY = window.innerHeight - panelHeight;
+        
+        x = Math.max(0, Math.min(x, maxX));
+        y = Math.max(0, Math.min(y, maxY));
+        
+        // Apply new position with fixed positioning to prevent jumping when scrolling
+        editPanel.style.left = \`\${x}px\`;
+        editPanel.style.top = \`\${y}px\`;
+        editPanel.style.position = 'fixed';
+        
+        // Remove the default positioning classes
+        editPanel.classList.remove('right-4');
+        editPanel.classList.remove('top-4');
     });
     
-    editPanel.appendChild(minimizeBtn);
+    // Handle both mouseup and mouseleave to prevent panel from sticking
+    function endDrag() {
+        if (isDragging && editPanel) {
+            isDragging = false;
+            editPanel.classList.remove('dragging');
+            toggleIframePointerEvents(false);
+        }
+    }
+    
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('mouseleave', endDrag);
+    
+    // Prevent dragging from stopping if mouse moves too fast
+    document.addEventListener('dragend', endDrag);
+    
+    // Toggle panel visibility
+    if (minimizeBtn) {
+        let isPanelMinimized = false;
+        const panelContent = document.getElementById('edit-form');
+        
+        minimizeBtn.addEventListener('click', function() {
+            if (panelContent) {
+                if (isPanelMinimized) {
+                    panelContent.style.display = 'flex';
+                    minimizeBtn.innerHTML = '−';
+                    minimizeBtn.title = 'Minimize panel';
+                } else {
+                    panelContent.style.display = 'none';
+                    minimizeBtn.innerHTML = '+';
+                    minimizeBtn.title = 'Expand panel';
+                }
+                isPanelMinimized = !isPanelMinimized;
+            }
+        });
+    }
     
     // Handle form submission to reload iframe
     const form = document.getElementById('edit-form');
-    const iframe = document.getElementById('site-preview');
     
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(form);
-        
-        try {
-            const response = await fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            });
+    if (form && iframe) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (response.ok) {
-                // Show a success message
-                const successMsg = document.createElement('div');
-                successMsg.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded';
-                successMsg.innerHTML = 'Changes saved successfully! Reloading preview...';
-                document.body.appendChild(successMsg);
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                // Reload the iframe
-                iframe.src = iframe.src;
-                
-                // Remove success message after 3 seconds
-                setTimeout(() => {
-                    successMsg.remove();
-                }, 3000);
-            } else {
-                throw new Error('Failed to save changes');
+                if (response.ok) {
+                    // Show a success message
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded';
+                    successMsg.innerHTML = 'Changes saved successfully! Reloading preview...';
+                    document.body.appendChild(successMsg);
+                    
+                    // Reload the iframe
+                    iframe.src = iframe.src;
+                    
+                    // Remove success message after 3 seconds
+                    setTimeout(() => {
+                        successMsg.remove();
+                    }, 3000);
+                    
+                    // Redirect to admin page after successful save
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 3500);
+                } else {
+                    throw new Error('Failed to save changes');
+                }
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                alert('Failed to save changes. Please try again.');
             }
-        } catch (error) {
-            console.error('Error saving changes:', error);
-            alert('Failed to save changes. Please try again.');
-        }
-    });
+        });
+    }
     
     const imageGrid = document.getElementById('imageGrid');
     const imageUpload = document.getElementById('imageUpload');
     const addDomainButton = document.getElementById('addDomainButton');
     const addImageButton = document.getElementById('addImageButton');
-    const subdomain = document.querySelector('input[name="subdomain"]').value;
+    const subdomainInput = document.querySelector('input[name="subdomain"]');
     let checkNameTimeout;
     let currentDomainToRemove = '';
 
     // Load existing images
     async function loadImages() {
-        const subdomain = document.getElementById('subdomain').value;
+        const subdomain = document.getElementById('subdomain')?.value;
+        if (!subdomain) return;
+        
         try {
             const response = await fetch('/api/user-images?subdomain=' + subdomain);
             if (!response.ok) throw new Error('Failed to load images');
             const images = await response.json();
             
-            imageGrid.innerHTML = images.map(image => \`
-                <div class="relative group" data-image-id="\${image.id}">
-                    <img src="/api/user-images?id=\${image.id}&subdomain=\${subdomain}&w=150" 
-                         alt="\${image.filename}"
-                         class="w-[150px] h-[150px] object-cover rounded-lg border border-gray-200">
-                    <button onclick="deleteImage('\${image.id}')"
-                            class="absolute top-2 right-2 hidden group-hover:block p-1 
-                                   bg-red-500 text-white rounded-full hover:bg-red-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                  d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            \`).join('');
+            if (imageGrid) {
+                imageGrid.innerHTML = images.map(image => \`
+                    <div class="relative group" data-image-id="\${image.id}">
+                        <img src="/api/user-images?id=\${image.id}&subdomain=\${subdomain}&w=150" 
+                             alt="\${image.filename}"
+                             class="w-[150px] h-[150px] object-cover rounded-lg border border-gray-200">
+                        <button onclick="deleteImage('\${image.id}')"
+                                class="absolute top-2 right-2 hidden group-hover:block p-1 
+                                       bg-red-500 text-white rounded-full hover:bg-red-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                \`).join('');
+            }
         } catch (error) {
             console.error('Error loading images:', error);
         }
     }
 
     // Handle image upload
-    imageUpload.addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        const subdomain = document.getElementById('subdomain').value;
+    if (imageUpload) {
+        imageUpload.addEventListener('change', async function(e) {
+            const file = e.target.files?.[0];
+            const subdomain = document.getElementById('subdomain')?.value;
 
-        if (!file) return;
+            if (!file || !subdomain) return;
 
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('subdomain', subdomain);
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('subdomain', subdomain);
 
-        try {
-            const response = await fetch('/api/user-images', {
-                method: 'POST',
-                body: formData
-            });
+            try {
+                const response = await fetch('/api/user-images', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            if (!response.ok) throw new Error('Upload failed');
-            
-            // Reload images after successful upload
-            await loadImages();
-            
-            // Clear the file input
-            imageUpload.value = '';
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('Failed to upload image. Please try again.');
-        }
-    });
+                if (!response.ok) throw new Error('Upload failed');
+                
+                // Reload images after successful upload
+                await loadImages();
+                
+                // Clear the file input
+                imageUpload.value = '';
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Failed to upload image. Please try again.');
+            }
+        });
+    }
 
     // Handle image deletion
     window.deleteImage = async function(imageId) {
+        if (!event) return;
         event.preventDefault();
         const dialog = document.getElementById('deleteImageDialog');
         const confirmBtn = document.getElementById('confirmDeleteImage');
-        const subdomain = document.getElementById('subdomain').value;
+        const subdomain = document.getElementById('subdomain')?.value;
 
+        if (!dialog || !confirmBtn || !subdomain) return;
         
         const handleDelete = async () => {
             try {
@@ -367,8 +486,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const available = document.getElementById('available');
         const unavailable = document.getElementById('unavailable');
         
-        if (!name) {
-            indicator.classList.add('hidden');
+        if (!name || !indicator || !available || !unavailable) {
+            if (indicator) indicator.classList.add('hidden');
             return;
         }
 
@@ -400,20 +519,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    document.getElementById('subdomain').addEventListener('input', (e) => {
-        clearTimeout(checkNameTimeout);
-        checkNameTimeout = setTimeout(() => {
-            checkNameAvailability(e.target.value);
-        }, 300);
-    });
+    const subdomainElement = document.getElementById('subdomain');
+    if (subdomainElement) {
+        subdomainElement.addEventListener('input', (e) => {
+            clearTimeout(checkNameTimeout);
+            checkNameTimeout = setTimeout(() => {
+                checkNameAvailability(e.target.value);
+            }, 300);
+        });
+    }
 
-    document.getElementById('generate-name').addEventListener('click', async () => {
-        const response = await fetch('/api/generate-name');
-        const { subdomain } = await response.json();
-        const input = document.getElementById('subdomain');
-        input.value = subdomain;
-        checkNameAvailability(subdomain);
-    });
+    const generateNameBtn = document.getElementById('generate-name');
+    if (generateNameBtn) {
+        generateNameBtn.addEventListener('click', async () => {
+            const response = await fetch('/api/generate-name');
+            const { subdomain } = await response.json();
+            const input = document.getElementById('subdomain');
+            if (input) {
+                input.value = subdomain;
+                checkNameAvailability(subdomain);
+            }
+        });
+    }
 
     // Initial load
     loadImages();
@@ -422,7 +549,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Domain management
     async function loadDomains() {
         const domainsList = document.getElementById('domains-list');
-        const subdomain = document.getElementById('subdomain').value;
+        const subdomain = document.getElementById('subdomain')?.value;
+        
+        if (!domainsList || !subdomain) return;
+        
         try {
             console.log('Loading domains for', subdomain);
             const response = await fetch('/admin/domains?subdomain=' + encodeURIComponent(subdomain));
@@ -446,58 +576,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    const showAddImageDialog = function(event) {
-        event.preventDefault();
-        const dialog = document.getElementById('addImageDialog');
-        const confirmBtn = document.getElementById('confirmAddImage');
-        const input = document.getElementById('dialogDomain');
-        const subdomain = document.getElementById('subdomain').value;
+    if (addImageButton) {
+        addImageButton.addEventListener('click', function(event) {
+            if (!event) return;
+            event.preventDefault();
+            const dialog = document.getElementById('addImageDialog');
+            if (dialog) dialog.showModal();
+        });
+    }
 
-        
-        dialog.showModal();
-    };
+    if (addDomainButton) {
+        addDomainButton.addEventListener('click', function() {
+            const dialog = document.getElementById('addDomainDialog');
+            const confirmBtn = document.getElementById('confirmAddDomain');
+            const input = document.getElementById('dialogDomain');
+            const subdomain = document.getElementById('subdomain')?.value;
 
-    addImageButton.addEventListener('click', showAddImageDialog);
-
-    const showAddDomainDialog = function() {
-        const dialog = document.getElementById('addDomainDialog');
-        const confirmBtn = document.getElementById('confirmAddDomain');
-        const input = document.getElementById('dialogDomain');
-        const subdomain = document.getElementById('subdomain').value;
-
-        
-        const handleAdd = async () => {
-            const domain = input.value.trim();
-            if (!domain) return;
+            if (!dialog || !confirmBtn || !input || !subdomain) return;
             
-            try {
-                const response = await fetch('/admin/domains', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subdomain, domain })
-                });
+            const handleAdd = async () => {
+                const domain = input.value.trim();
+                if (!domain) return;
                 
-                if (!response.ok) throw new Error(await response.text());
-                
-                input.value = '';
-                dialog.close();
-                loadDomains();
-            } catch (error) {
-                alert('Failed to add domain: ' + error.message);
-            }
-            confirmBtn.removeEventListener('click', handleAdd);
-        };
+                try {
+                    const response = await fetch('/admin/domains', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subdomain, domain })
+                    });
+                    
+                    if (!response.ok) throw new Error(await response.text());
+                    
+                    input.value = '';
+                    dialog.close();
+                    loadDomains();
+                } catch (error) {
+                    alert('Failed to add domain: ' + error.message);
+                }
+                confirmBtn.removeEventListener('click', handleAdd);
+            };
 
-        confirmBtn.addEventListener('click', handleAdd);
-        dialog.showModal();
-    };
+            confirmBtn.addEventListener('click', handleAdd);
+            dialog.showModal();
+        });
+    }
 
-    addDomainButton.addEventListener('click', showAddDomainDialog);
-
-    const removeDomain = async function(host) {
+    window.removeDomain = async function(host) {
         const dialog = document.getElementById('removeDomainDialog');
         const confirmBtn = document.getElementById('confirmRemoveDomain');
-        const subdomain = document.getElementById('subdomain').value;
+        const subdomain = document.getElementById('subdomain')?.value;
+
+        if (!dialog || !confirmBtn || !subdomain || !host) return;
 
         currentDomainToRemove = host;
         

@@ -42,6 +42,9 @@ export class ClaudeProvider implements LLMProvider {
       return { type: "text", text: p };
     });
 
+    if (system && system.length > 0) {
+      system.at(-1).cache_control = { type: "ephemeral" };
+    }
     // Add images if present
     let imageCounter = 0;
     if (prompt.images && prompt.images.length > 0) {
@@ -61,7 +64,7 @@ export class ClaudeProvider implements LLMProvider {
         });
       }
 
-      // if (prompt.images.length > 1) {
+      // if (prompt.images.length > 1 && content != undefined) {
       //   // cache control for multiple images
       //   content.at(-1).cache_control = { type: "ephemeral" };
       // }
