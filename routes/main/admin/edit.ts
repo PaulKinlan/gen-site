@@ -113,8 +113,6 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
                 <!-- Floating edit panel -->
                 <div class="absolute top-4 right-4 w-1/3 bg-white bg-opacity-95 shadow-lg rounded-lg p-4 max-h-[80vh] overflow-y-auto">
                     <form class="space-y-3 flex flex-col" method="post" id="edit-form">
-                    <input type="hidden" name="subdomain">
-
                     <div class="flex">
                         <h2 class="text-lg font-bold mb-3 flex-row flex flex-1 items-center">
                         Edit Site: 
