@@ -258,11 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     successMsg.remove();
                 }, 3000);
-                
-                // Redirect to admin page after successful save
-                setTimeout(() => {
-                    window.location.href = '/admin';
-                }, 3500);
             } else {
                 throw new Error('Failed to save changes');
             }
