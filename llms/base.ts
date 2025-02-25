@@ -1,3 +1,4 @@
+import { SupportedContentType } from "@makemy/types.ts";
 export type LLMImage = {
   type: "base64";
   media_type: string;
@@ -5,6 +6,7 @@ export type LLMImage = {
 };
 
 export type LLMInput = {
+  contentType: Exclude<SupportedContentType, "image" | "media">;
   system: string[];
   files: string[]; // The files that are being referenced
   context: string[]; // The context that is being imported (i.e, @url)

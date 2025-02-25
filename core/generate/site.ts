@@ -11,36 +11,28 @@ import { StorageService } from "@makemy/core/storage.ts";
 import { isMediaFile } from "@makemy/utils/contentType.ts";
 import * as htmlparser2 from "@victr/htmlparser2";
 import { encodeBase64 } from "@std/encoding";
-
-// Site generation helper
-
-const getDomain = (site: Site) =>
-  site.customDomains && site.customDomains.length > 0
-    ? site.customDomains[0]
-    : `${site.subdomain}.itsmy.blog`;
+import { escape } from "@std/html/entities";
 
 export const additionalPromptForContentType: Record<string, string> = {
-  html: `+ Generate valid accessible HTML5 content
+  html: `+ Generate valid accessible semantic HTML5 markup
 + <meta name="generator" content="MakeMy.blog" />
-+ Include semantic markup and ensure accessibility. 
-+ You may use inline CSS and <style> blocks, but you must keep all the pages consistent.
-+ You should prefer to ink to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
-+ Prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.
-+ For images that should be AI generated, use the following format:
-  <img data-gen-image="true" 
++ Use the attached images to guide your layout and design choices.
++ You MAY use inline CSS and <style> blocks, but you must keep all the pages consistent.
++ You SHOULD prefer to link to a CSS file with a descriptive name, e.g <link rel="stylesheet" href="/main.css">. Consider CSS from previous requests to enable consistent styling across the site.
++ You SHOULD prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.
++ For images that the user asks you to generate use the following format:
+  \`<img data-gen-image="true" 
        data-context="[description of the image to generate]" 
        data-style="[optional style: photo, illustration, watercolor, etc]"
        data-width="[optional width in pixels]"
        data-height="[optional height in pixels]"
        alt="[descriptive alt text]" 
-       src="[descriptive-file-name-for-the-image]">`,
+       src="[descriptive-file-name-for-the-image]">\``,
   css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the provided HTML.",
   js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
 };
 
-async function parseHtmlStreamForGeneratedImages(
-  stream: ReadableStream<Uint8Array>
-): Promise<ImageGenerationContext[]> {
+function parseHtmlStreamForGeneratedImages(site: Site): TransformStream {
   const parser = new htmlparser2.Parser({
     onopentag: (name: string, attributes: Record<string, string>) => {
       if (name === "img" && attributes["data-gen-image"] === "true") {
@@ -84,7 +76,10 @@ async function parseHtmlStreamForGeneratedImages(
             console.warn("Invalid data-height:", attributes["data-height"]);
           }
         }
-        generatedImages.push(image);
+
+        console.log("Adding image to site", site, image);
+        // It's really a promise here. This might fail.
+        db.addSiteImageInformation(site.subdomain, image);
       }
     },
     onerror: (error: Error) => {
@@ -92,102 +87,69 @@ async function parseHtmlStreamForGeneratedImages(
     },
   });
   const decoder = new TextDecoder();
-  let buffer = "";
-  const generatedImages: ImageGenerationContext[] = [];
 
-  const reader = stream.getReader();
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        if (buffer.length > 0) {
-          parser.write(buffer);
-        }
-        break;
-      }
-
-      if (value) {
-        const chunkText = decoder.decode(value, { stream: true });
-        buffer += chunkText;
-
-        try {
-          parser.write(buffer); //Feed the current buffer.
-          buffer = ""; //If successfull reset the buffer.
-        } catch (e) {
-          //The parser might not be able to handle the current buffer, save for later.
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-    parser.end();
-  }
-
-  return generatedImages;
+  return new TransformStream({
+    transform(chunk, controller) {
+      // We are sending to the find the images.
+      controller.enqueue(chunk);
+      const chunkText = decoder.decode(chunk, { stream: true });
+      parser.write(chunkText);
+    },
+  });
 }
 
-async function* extractCodeBlocks(
-  readableStream: ReadableStream,
+function extractCodeBlocksTS(
   contentType: SupportedContentType
-): AsyncGenerator<Uint8Array> {
-  const reader = readableStream.getReader();
+): TransformStream {
   let buffer = "";
   let inCodeBlock = false;
+  return new TransformStream({
+    transform(chunk, controller) {
+      const done = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-
-    if (done) {
-      if (inCodeBlock) {
-        yield new TextEncoder().encode(buffer); // Yield any remaining code
+      if (done) {
+        if (inCodeBlock) {
+          controller.enqueue(new TextEncoder().encode(buffer));
+        }
       }
-      break;
-    }
 
-    buffer += value;
+      buffer += chunk;
 
-    let startIndex = 0;
+      let startIndex = 0;
 
-    if (inCodeBlock == false) {
-      if (
-        (startIndex = buffer.indexOf("```" + contentType, startIndex)) !== -1
-      ) {
-        inCodeBlock = true;
-        yield new TextEncoder().encode(
-          buffer.substring(startIndex + 3 + contentType.length)
+      if (inCodeBlock == false) {
+        if (
+          (startIndex = buffer.indexOf("```" + contentType, startIndex)) !== -1
+        ) {
+          inCodeBlock = true;
+          controller.enqueue(
+            new TextEncoder().encode(
+              buffer.substring(startIndex + 3 + contentType.length)
+            )
+          );
+          buffer = "";
+          startIndex = 0;
+        }
+      } else {
+        // We are in a code block, we are looking for the end of the code block
+        let endIndex = buffer.indexOf("```");
+        if (endIndex !== -1) {
+          console.log("END END END");
+          // We found the end of the code block
+          inCodeBlock = false;
+          controller.enqueue(
+            new TextEncoder().encode(buffer.substring(0, endIndex))
+          ); // Don't go past endIndex
+          // Because we are only managing one code block we can return;
+          controller.terminate();
+          return;
+        }
+        // Yield all the text
+        controller.enqueue(
+          new TextEncoder().encode(buffer.substring(startIndex))
         );
         buffer = "";
-        startIndex = 0;
       }
-    } else {
-      // We are in a code block, we are looking for the end of the code block
-      let endIndex = buffer.indexOf("```");
-      if (endIndex !== -1) {
-        // We found the end of the code block
-        inCodeBlock = false;
-        yield new TextEncoder().encode(buffer.substring(0, endIndex)); // Don't go past endIndex
-        // Because we are only managing one code block we can return;
-        return;
-      }
-      // Yield all the text
-      yield new TextEncoder().encode(buffer.substring(startIndex));
-      buffer = "";
-    }
-  }
-}
-
-function extractContentFromMarkdownStream(
-  stream: ReadableStream,
-  contentType: SupportedContentType
-): ReadableStream {
-  return new ReadableStream({
-    async pull(controller) {
-      for await (const chunk of extractCodeBlocks(stream, contentType)) {
-        controller.enqueue(chunk);
-      }
-      controller.close();
     },
   });
 }
@@ -196,7 +158,7 @@ export async function generateSiteContent(
   path: string,
   site: Site,
   context: RequestContext,
-  contentType: SupportedContentType
+  contentType: Exclude<SupportedContentType, "image" | "media">
 ): Promise<ReadableStream> {
   const system = `You are an expert web developer that creates unique beautiful, fast, accessible web sites. 
 
@@ -264,6 +226,7 @@ If you need to use the date, today's date is: ${new Date().toDateString()}
   );
 
   const prompt: LLMInput = {
+    contentType: contentType,
     system: [system],
     files: previousRequestContext,
     context: importedContext,
@@ -283,17 +246,12 @@ Create a ${contentType.toLocaleUpperCase()} file for the path '${path}' based on
 
   // Log the prompt with any used images
   await db.logPrompt(prompt.prompt, prompt.system.join("\n"), site, userImages);
-  const tees = response.tee();
-  const content = extractContentFromMarkdownStream(tees[0], contentType);
-  let imageTees = content.tee();
+
+  const content = response.pipeThrough(extractCodeBlocksTS(contentType));
 
   if (contentType === "html") {
-    const images = await parseHtmlStreamForGeneratedImages(imageTees[1]);
-    for (const image of images) {
-      console.log("Adding image to site", site, image);
-      await db.addSiteImageInformation(site.subdomain, image);
-    }
+    return content.pipeThrough(parseHtmlStreamForGeneratedImages(site));
   }
 
-  return imageTees[0];
+  return content;
 }

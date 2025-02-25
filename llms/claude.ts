@@ -126,6 +126,15 @@ export class ClaudeProvider implements LLMProvider {
           role: "user",
           content,
         },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: "```" + prompt.contentType,
+            },
+          ],
+        },
       ],
       stream: true,
     });
@@ -133,6 +142,8 @@ export class ClaudeProvider implements LLMProvider {
     const newStream = new ReadableStream({
       async start(controller) {
         console.log("Starting stream: Claude");
+        controller.enqueue("```" + prompt.contentType);
+
         for await (const event of stream) {
           if (
             event.type === "content_block_delta" &&
