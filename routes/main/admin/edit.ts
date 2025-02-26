@@ -32,6 +32,7 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
             z-index:10;
         }
         #site-preview.loading {
+            position: absolute;
             z-index: -1;
         }
 
