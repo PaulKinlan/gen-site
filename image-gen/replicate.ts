@@ -25,58 +25,6 @@ export class ReplicateProvider implements ImageGenerationProvider {
         prompt: context.prompt,
       },
     });
-
-    // Convert the output to a ReadableStream
-    return new ReadableStream({
-      start(controller) {
-        if (typeof output === "string") {
-          // Assuming output is a URL or base64 string
-          fetch(output)
-            .then((response) => response.body)
-            .then((body) => {
-              if (body) {
-                const reader = body.getReader();
-                return new ReadableStream({
-                  start(controller) {
-                    return pump();
-                    function pump(): Promise<void> {
-                      return reader.read().then(({ done, value }) => {
-                        if (done) {
-                          controller.close();
-                          return;
-                        }
-                        controller.enqueue(value);
-                        return pump();
-                      });
-                    }
-                  },
-                });
-              }
-              throw new Error("Failed to get response body");
-            })
-            .then((stream) => {
-              const reader = stream.getReader();
-              return pump();
-              function pump(): Promise<void> {
-                return reader.read().then(({ done, value }) => {
-                  if (done) {
-                    controller.close();
-                    return;
-                  }
-                  controller.enqueue(value);
-                  return pump();
-                });
-              }
-            })
-            .catch((error) => {
-              controller.error(error);
-            });
-        } else {
-          controller.error(
-            new Error("Unexpected output format from Replicate")
-          );
-        }
-      },
-    });
+    return output;
   }
 }

@@ -1,5 +1,6 @@
 import { LLMInput, LLMProvider, LLMImage } from "@makemy/llms/base.ts";
 import Anthropic from "@anthropic-ai/sdk";
+import { additionalPromptForContentType } from "@makemy/core/generate/site.ts";
 
 type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -45,30 +46,6 @@ export class ClaudeProvider implements LLMProvider {
     if (system && system.length > 0) {
       system.at(-1).cache_control = { type: "ephemeral" };
     }
-    // Add images if present
-    let imageCounter = 0;
-    if (prompt.images && prompt.images.length > 0) {
-      for (const img of prompt.images) {
-        content.push({
-          type: "text",
-          text: `Image ${imageCounter++}`,
-        });
-
-        content.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: img.media_type as MediaType,
-            data: img.data,
-          },
-        });
-      }
-
-      // if (prompt.images.length > 1 && content != undefined) {
-      //   // cache control for multiple images
-      //   content.at(-1).cache_control = { type: "ephemeral" };
-      // }
-    }
 
     system.push({
       type: "text",
@@ -107,16 +84,42 @@ export class ClaudeProvider implements LLMProvider {
 
     const client = new Anthropic({ apiKey: this.apiKey });
 
-    console.log("System messages", system);
-    console.log("Images", prompt.images?.length);
-    console.log("Prompt", prompt.prompt);
+    // console.log("System messages", system);
+    // console.log("Images", prompt.images?.length);
+    // console.log("Prompt", prompt.prompt);
 
+    // Add images if present
+    let imageCounter = 0;
+    if (prompt.images && prompt.images.length > 0) {
+      for (const img of prompt.images) {
+        content.push({
+          type: "text",
+          text: `Image ${imageCounter++}: `,
+        });
+
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.media_type as MediaType,
+            data: img.data,
+          },
+        });
+      }
+    }
+
+    content.push({
+      type: "text",
+      text: `You MUST ALWAYS follow these rules:
+${additionalPromptForContentType[prompt.contentType]}`,
+    });
     // Add text prompt
     content.push({
       type: "text",
       text: prompt.prompt,
     });
 
+    console.log("System messages", system);
     const stream = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 8192,
@@ -142,6 +145,7 @@ export class ClaudeProvider implements LLMProvider {
     const newStream = new ReadableStream({
       async start(controller) {
         console.log("Starting stream: Claude");
+        // We use this because we are telling claude to output this, so it needs to be present.
         controller.enqueue("```" + prompt.contentType);
 
         for await (const event of stream) {

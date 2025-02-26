@@ -12,7 +12,11 @@ export async function generateDirectImage(
   const llmProvider = getImageGenerationProvider();
 
   // Use the site's prompt and path context to generate a relevant image
-  const imageContext = await db.getSiteImageInformation(site.subdomain, path);
+  console.log(site.subdomain, path);
+  const imageContext = await db.getSiteImageInformation(
+    site.subdomain,
+    "/" + path
+  );
 
   if (!imageContext) {
     throw new Error(`No image context found for path: ${path}`);

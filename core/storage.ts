@@ -19,7 +19,6 @@ const storage = new Storage({
   keyFile: Deno.env.get("GOOGLE_CLOUD_KEY_FILE"),
 });
 const bucket = storage.bucket(BUCKET_NAME);
-
 const wasm = await Deno.readFile(
   new URL("magick.wasm", import.meta.resolve("@imagemagick/magick-wasm"))
 );
