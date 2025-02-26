@@ -18,10 +18,11 @@ export const additionalPromptForContentType: Record<string, string> = {
 + <meta name="generator" content="MakeMy.blog" />
 + Use the attached images to guide your layout and design choices.
 + The user may include a link to an image URL directly. 
-+ The user may ask you to generate or include an image without a URL. You MUST ALWAYS use the following image format: <img data-gen-image="true" data-context="[description of the image to generate]" data-style="[optional style: photo, illustration, watercolor, etc]" data-width="[optional width in pixels]" data-height="[optional height in pixels]" alt="[descriptive alt text]" src="/[descriptive-file-name-for-the-image].jpg">. Never ever use the <img> tag without the data-gen-image attribute.
++ The user may ask you to generate or include an image without a URL. You MUST ALWAYS use the following image format: <img data-gen-image="true" data-context="[description of the image to generate]" data-style="[optional style: photo, illustration, watercolor, etc]" width="[optional width in pixels]" height="[optional height in pixels]" alt="[descriptive alt text]" src="/[descriptive-file-name-for-the-image].jpg">. Never ever use the <img> tag without the data-gen-image attribute.
 + NEVER use the <img> tag with a src pointing an external URL that is not provided in the <prompt>
 + You MAY use inline CSS and <style> blocks, but you must keep all the page styles consistent.
-+ You SHOULD prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.`,
++ You SHOULD prefer not to use JavaScript in the HTML content. If you need to include JavaScript, link to an external file with a descriptive name.
++ Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the provided HTML.`,
   css: "Generate clean, modern (e.g use flex-box and grid), responsive CSS (mobile, desktop and tablet). Include light and dark mode. Use the uploaded images as color inspiration, layout design that is suitable for the provided HTML.",
   js: "Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.",
 };
@@ -65,8 +66,8 @@ function parseHtmlStreamForGeneratedImages(site: Site): TransformStream {
             const alt = extractAttribute(imgTag, "alt");
             const src = extractAttribute(imgTag, "src");
             const style = extractAttribute(imgTag, "data-style");
-            const width = extractAttribute(imgTag, "data-width");
-            const height = extractAttribute(imgTag, "data-height");
+            const width = extractAttribute(imgTag, "width");
+            const height = extractAttribute(imgTag, "height");
 
             const image: ImageGenerationContext = {
               prompt: context || "",
