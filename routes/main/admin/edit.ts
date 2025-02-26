@@ -29,6 +29,10 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
             
             /* Animation for the box-shadow */
             animation: multicolorGlow 10s infinite;
+            z-index:10;
+        }
+        #site-preview.loading {
+            z-index: -1;
         }
 
         @keyframes multicolorGlow {
