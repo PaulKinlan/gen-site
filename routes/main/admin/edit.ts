@@ -22,18 +22,13 @@ const template = async (site: Site | null, error?: string) => `<!DOCTYPE html>
           z-index: 1000;
         }
 
-        #site-preview {
-            position: absolute;
-            z-index: -1;
-        }
-
         div:has(#site-preview.loading) {
             /* Initial inset shadow */
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
-                  inset 0 -1px 3px rgba(255, 255, 255, 0.7);
-      
-      /* Animation for the box-shadow */
-      animation: multicolorGlow 10s infinite;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 
+                        inset 0 -1px 3px rgba(255, 255, 255, 0.7);
+            
+            /* Animation for the box-shadow */
+            animation: multicolorGlow 10s infinite;
         }
 
         @keyframes multicolorGlow {
