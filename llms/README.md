@@ -28,7 +28,7 @@ If `LLM_PROVIDER` is not set, the system defaults to using Claude.
 
 Each provider is configured to use a capable model suitable for generating web content:
 
-- Claude: claude-3-sonnet-20240229
+- Claude: claude-sonnet-4-5-20250929
 - Gemini: gemini-pro
 - Groq: mixtral-8x7b-32768
 - OpenAI: gpt-4-turbo-preview
