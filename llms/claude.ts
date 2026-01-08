@@ -121,7 +121,7 @@ ${additionalPromptForContentType[prompt.contentType]}`,
 
     console.log("System messages", system);
     const stream = await client.messages.create({
-      model: "claude-3-7-sonnet-20250219",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
       system: system.join("\n"),
       messages: [
