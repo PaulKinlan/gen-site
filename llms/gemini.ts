@@ -5,8 +5,7 @@ import {
 } from "@makemy/llms/base.ts";
 import { ImageGenerationContext } from "@makemy/types.ts";
 
-const TEXT_MODEL = "gemini-2.0-flash";
-const IMAGE_MODEL = "gemini-pro-vision";
+const TEXT_MODEL = "gemini-2.5-flash";
 export class GeminiProvider implements LLMProvider {
   private apiKey: string;
 

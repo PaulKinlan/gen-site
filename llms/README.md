@@ -16,7 +16,7 @@ Set the following environment variables to configure the LLM system:
 LLM_PROVIDER=claude|gemini|groq|openai
 
 # Required: API keys for the providers you want to use
-CLAUDE_API_KEY=your_claude_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
 GEMINI_API_KEY=your_gemini_api_key
 GROQ_API_KEY=your_groq_api_key
 OPENAI_API_KEY=your_openai_api_key
@@ -28,10 +28,10 @@ If `LLM_PROVIDER` is not set, the system defaults to using Claude.
 
 Each provider is configured to use a capable model suitable for generating web content:
 
-- Claude: claude-sonnet-4-5-20250929
-- Gemini: gemini-pro
-- Groq: mixtral-8x7b-32768
-- OpenAI: gpt-4-turbo-preview
+- Claude: claude-sonnet-4-6
+- Gemini: gemini-2.5-flash
+- Groq: llama-3.3-70b-versatile
+- OpenAI: gpt-4o
 
 ## Usage
 

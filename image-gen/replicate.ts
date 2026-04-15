@@ -7,7 +7,7 @@ import { decodeBase64 } from "@std/encoding";
 import { Buffer } from "node:buffer";
 
 const API_KEY = Deno.env.get("REPLICATE_API_KEY");
-const MODEL = "google/imagen-3-fast";
+const MODEL = "google/imagen-4-fast";
 
 export class ReplicateProvider implements ImageGenerationProvider {
   async generateImage(

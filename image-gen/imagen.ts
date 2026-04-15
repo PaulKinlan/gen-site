@@ -1,54 +1,60 @@
 import { ImageGenerationProvider } from "@makemy/image-gen/base.ts";
 import { ImageGenerationContext } from "@makemy/types.ts";
+import { decodeBase64 } from "@std/encoding";
+
+const IMAGE_MODEL = "imagen-4.0-generate-001";
 
 export class ImaGenProvider implements ImageGenerationProvider {
-  async generateImage(context: ImageGenerationContext): Promise<string> {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/${IMAGE_MODEL}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": this.apiKey,
+  private apiKey: string;
+
+  constructor() {
+    this.apiKey = Deno.env.get("GEMINI_API_KEY") || "";
+  }
+
+  async generateImage(
+    context: ImageGenerationContext
+  ): Promise<ReadableStream> {
+    const promptText = `${context.prompt}${
+      context.style ? `. Style: ${context.style}` : ""
+    }`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:predict`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": this.apiKey,
+        },
+        body: JSON.stringify({
+          instances: [{ prompt: promptText }],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "1:1",
           },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `Generate an image matching this description: ${
-                      context.prompt
-                    }${
-                      context.style ? `. Style: ${context.style}` : ""
-                    }. The image should be ${context.width}x${
-                      context.height
-                    } pixels.`,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.7,
-            },
-          }),
-        }
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Imagen image generation failed: ${response.status} ${response.statusText}`
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to generate image: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
-        throw new Error("No image data in response");
-      }
-
-      return data.candidates[0].content.parts[0].inlineData.data;
-    } catch (error) {
-      console.error("Image generation failed:", error);
-      throw new Error("image generation", "Imagen");
     }
+
+    const data = await response.json();
+    const base64 = data?.predictions?.[0]?.bytesBase64Encoded;
+
+    if (!base64) {
+      throw new Error("Imagen image generation failed: no image data in response");
+    }
+
+    const bytes = decodeBase64(base64);
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(bytes);
+        controller.close();
+      },
+    });
   }
 }
