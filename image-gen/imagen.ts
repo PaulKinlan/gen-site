@@ -4,6 +4,27 @@ import { decodeBase64 } from "@std/encoding";
 
 const IMAGE_MODEL = "imagen-4.0-generate-001";
 
+// Imagen only accepts a fixed set of aspect ratios; pick the closest one.
+const SUPPORTED_ASPECT_RATIOS: ReadonlyArray<[string, number]> = [
+  ["1:1", 1],
+  ["3:4", 3 / 4],
+  ["4:3", 4 / 3],
+  ["9:16", 9 / 16],
+  ["16:9", 16 / 9],
+];
+
+function nearestAspectRatio(width?: number, height?: number): string {
+  if (!width || !height) return "1:1";
+  const target = width / height;
+  let best = SUPPORTED_ASPECT_RATIOS[0];
+  for (const candidate of SUPPORTED_ASPECT_RATIOS) {
+    if (Math.abs(candidate[1] - target) < Math.abs(best[1] - target)) {
+      best = candidate;
+    }
+  }
+  return best[0];
+}
+
 export class ImaGenProvider implements ImageGenerationProvider {
   private apiKey: string;
 
@@ -30,7 +51,7 @@ export class ImaGenProvider implements ImageGenerationProvider {
           instances: [{ prompt: promptText }],
           parameters: {
             sampleCount: 1,
-            aspectRatio: "1:1",
+            aspectRatio: nearestAspectRatio(context.width, context.height),
           },
         }),
       }

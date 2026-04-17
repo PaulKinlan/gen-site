@@ -1,9 +1,4 @@
-import {
-  LLMInput,
-  LLMProvider,
-  UnsupportedOperationError,
-} from "@makemy/llms/base.ts";
-import { ImageGenerationContext } from "@makemy/types.ts";
+import { LLMInput, LLMProvider } from "@makemy/llms/base.ts";
 
 const TEXT_MODEL = "gemini-2.5-flash";
 export class GeminiProvider implements LLMProvider {

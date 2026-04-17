@@ -21,9 +21,9 @@ type TextBlock = {
 type ContentBlock = TextBlock | ImageBlock;
 
 type SystemMessage = {
-  type: string;
+  type: "text";
   text: string;
-  cache_control?: { type: string };
+  cache_control?: { type: "ephemeral" };
 };
 
 export class ClaudeProvider implements LLMProvider {
@@ -56,9 +56,9 @@ export class ClaudeProvider implements LLMProvider {
     console.log("Files", prompt.files);
 
     system.push(
-      ...prompt.files.map((f) => {
+      ...prompt.files.map((f): SystemMessage => {
         const cache_control =
-          cacheControlCount < 4 ? { type: "ephemeral" } : undefined;
+          cacheControlCount < 4 ? { type: "ephemeral" as const } : undefined;
         cacheControlCount++;
         return { type: "text", text: f };
       })
@@ -72,9 +72,9 @@ export class ClaudeProvider implements LLMProvider {
     });
 
     system.push(
-      ...prompt.context.map((c) => {
+      ...prompt.context.map((c): SystemMessage => {
         const cache_control =
-          cacheControlCount <= 4 ? { type: "ephemeral" } : undefined;
+          cacheControlCount <= 4 ? { type: "ephemeral" as const } : undefined;
         cacheControlCount++;
         return { type: "text", text: c };
       })
@@ -123,7 +123,7 @@ ${additionalPromptForContentType[prompt.contentType]}`,
     const stream = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 8192,
-      system: system.join("\n"),
+      system,
       messages: [
         {
           role: "user",

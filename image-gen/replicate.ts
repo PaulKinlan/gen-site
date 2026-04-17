@@ -2,10 +2,6 @@ import { ImageGenerationProvider } from "@makemy/image-gen/base.ts";
 import { ImageGenerationContext } from "@makemy/types.ts";
 import Replicate from "replicate";
 
-import { decodeBase64 } from "@std/encoding";
-
-import { Buffer } from "node:buffer";
-
 const API_KEY = Deno.env.get("REPLICATE_API_KEY");
 const MODEL = "google/imagen-4-fast";
 
