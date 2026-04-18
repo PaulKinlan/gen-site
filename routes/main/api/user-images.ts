@@ -26,7 +26,7 @@ export default new (class extends BaseHandler {
         return new Response("Image not found in storage", { status: 404 });
       }
 
-      return new Response(data, {
+      return new Response(data as BodyInit, {
         headers: {
           "Content-Type": image.mimeType,
           "Cache-Control": "public, max-age=31536000, immutable",

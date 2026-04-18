@@ -7,10 +7,15 @@ export class OpenAIProvider implements LLMProvider {
     this.apiKey = Deno.env.get("OPENAI_API_KEY") || "";
   }
 
-  async generate(prompt: LLMInput): Promise<string> {
-    const messages = prompt.system.map((p) => {
-      return { role: "user", content: p };
-    });
+  async generate(prompt: LLMInput): Promise<ReadableStream> {
+    const messages: { role: string; content: string }[] = prompt.system.map(
+      (p) => {
+        return { role: "system", content: p };
+      }
+    );
+
+    messages.push({ role: "user", content: prompt.prompt });
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -26,6 +31,12 @@ export class OpenAIProvider implements LLMProvider {
     });
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const text: string = data.choices[0].message.content;
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(text);
+        controller.close();
+      },
+    });
   }
 }

@@ -73,7 +73,7 @@ export class StorageService {
     console.log("Caching user-image", subdomain, imageId);
     userImageCache.put(
       `https://users/${subdomain}/${imageId}`,
-      new Response(processedData)
+      new Response(processedData as BodyInit)
     );
   }
 
@@ -96,7 +96,7 @@ export class StorageService {
       if (!exists) return null;
 
       const [data] = await file.download();
-      return data;
+      return new Uint8Array(data);
     } catch (error) {
       console.error("Error downloading image:", error);
       return null;

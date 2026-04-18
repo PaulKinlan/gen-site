@@ -43,8 +43,9 @@ export class ClaudeProvider implements LLMProvider {
       return { type: "text", text: p };
     });
 
-    if (system && system.length > 0) {
-      system.at(-1).cache_control = { type: "ephemeral" };
+    const lastSystem = system.at(-1);
+    if (lastSystem) {
+      lastSystem.cache_control = { type: "ephemeral" };
     }
 
     system.push({

@@ -8,10 +8,12 @@ export class GeminiProvider implements LLMProvider {
     this.apiKey = Deno.env.get("GEMINI_API_KEY") || "";
   }
 
-  async generate(prompt: LLMInput): Promise<string> {
+  async generate(prompt: LLMInput): Promise<ReadableStream> {
     const parts = prompt.system.map((p) => {
       return { text: p };
     });
+
+    parts.push({ text: prompt.prompt });
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1/models/${TEXT_MODEL}:generateContent`,
@@ -36,6 +38,12 @@ export class GeminiProvider implements LLMProvider {
     );
 
     const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    const text: string = data.candidates[0].content.parts[0].text;
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(text);
+        controller.close();
+      },
+    });
   }
 }

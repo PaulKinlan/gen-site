@@ -110,13 +110,13 @@ const getTemplate = `<!DOCTYPE html>
 </html>`;
 
 export default new (class extends BaseHandler {
-  async get(req: Request): Promise<Response> {
+  override async get(req: Request): Promise<Response> {
     return new Response(getTemplate, {
       status: 200,
       headers: { "Content-Type": "text/html" },
     });
   }
-  async post(req: Request): Promise<Response> {
+  override async post(req: Request): Promise<Response> {
     const url = new URL(req.url);
     url.pathname = "/admin";
     const adminUrl = url.toString();
@@ -154,7 +154,7 @@ export default new (class extends BaseHandler {
         value: token,
         path: "/",
         httpOnly: true,
-        SameSite: "Strict",
+        sameSite: "Strict",
       });
 
       const sessionId = crypto.randomUUID();
@@ -165,12 +165,12 @@ export default new (class extends BaseHandler {
         value: sessionId,
         path: "/",
         httpOnly: true,
-        SameSite: "Strict",
+        sameSite: "Strict",
       });
 
       return response;
     } catch (error) {
-      return new Response(error.message, {
+      return new Response((error as Error).message, {
         status: 400,
       });
     }

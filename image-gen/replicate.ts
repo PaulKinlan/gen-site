@@ -21,6 +21,6 @@ export class ReplicateProvider implements ImageGenerationProvider {
         prompt: context.prompt,
       },
     });
-    return output;
+    return output as ReadableStream;
   }
 }

@@ -10,14 +10,14 @@ export function extractMarkdown(html: string) {
 
   turndown.addRule("no-style", {
     filter: ["style", "script", "footer", "iframe", "head", "img"],
-    replacement: function (content) {
+    replacement: function (content: string) {
       return "";
     },
   });
 
   turndown.addRule("no-link", {
     filter: ["a"],
-    replacement: function (content) {
+    replacement: function (content: string) {
       return content;
     },
   });

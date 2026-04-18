@@ -7,13 +7,13 @@ const ENV_SaasDomainsAuthToken = Deno.env.get("SAAS_DOMAINS_AUTH_TOKEN");
 
 export function cache({ cache }: { cache: Cache }) {
   return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
+    originalMethod: (req: Request) => Promise<Response>,
+    _context: ClassMethodDecoratorContext
   ) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = async function (...args: any[]) {
+    async function cachedMethod(
+      this: unknown,
+      ...args: [Request]
+    ): Promise<Response> {
       const [req] = args;
       const url = new URL(req.url);
       const hostname = url.hostname;
@@ -29,9 +29,7 @@ export function cache({ cache }: { cache: Cache }) {
       let site;
       const servedForHeader = req.headers.get("X-Served-For");
       if (servedForHeader && ENV_SaasDomainsAuthToken == SaasDomainsAuthToken) {
-        // If served through custom domain proxy then we need to change the cache key to the custom domain
         site = await db.getSiteByDomain(servedForHeader);
-        // We shouldn't be really looking in the DB here.... but there is no way to know the context yet.
         if (site) {
           subdomain = site.subdomain;
         }
@@ -39,9 +37,8 @@ export function cache({ cache }: { cache: Cache }) {
         site = await db.getSite(subdomain);
       }
 
-      // // Skip cache for localhost
       if (subdomain === "localhost") {
-        return originalMethod.apply(this, args);
+        return originalMethod.call(this, ...args);
       }
 
       console.log("Cache name", `${subdomain}:${site?.versionUuid}`);
@@ -57,9 +54,8 @@ export function cache({ cache }: { cache: Cache }) {
         return cachedResponse;
       }
 
-      const response = await originalMethod.apply(this, args);
+      const response = await originalMethod.call(this, ...args);
 
-      // Only cache successful responses
       if (response.status === 200) {
         console.log(
           "Caching response for",
@@ -68,17 +64,16 @@ export function cache({ cache }: { cache: Cache }) {
           site?.versionUuid
         );
         if (isMedia == false) {
-          // remove this later date
           const path = url.pathname;
           const cacheKey = [subdomain, path];
-          cache.set(cacheKey, ""); // The old cache is now just so we know candidate previous requests (wait until matchAll is avaliable)
+          cache.set(cacheKey, "");
         }
         await subdomainCache.put(url, response.clone());
       }
 
       return response;
-    };
+    }
 
-    return descriptor;
+    return cachedMethod;
   };
 }
