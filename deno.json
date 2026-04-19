@@ -25,6 +25,7 @@
     "entrypoint": "main.ts"
   },
   "compilerOptions": {
+    "experimentalDecorators": false,
     "lib": ["deno.ns", "dom", "esnext"],
     "types": ["./types.ts"]
   }
