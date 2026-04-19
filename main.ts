@@ -37,6 +37,10 @@ async function init() {
           user = await db.getUserById(subdomain);
         }
 
+        if (!user) {
+          throw new Error(`Failed to create or find user: ${subdomain}`);
+        }
+
         const site: Site = {
           subdomain,
           versionUuid: crypto.randomUUID(),

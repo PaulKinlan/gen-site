@@ -36,7 +36,7 @@ export async function generateAsset(
   const importedContext =
     (await db.getAllExtractedMarkdown(site.subdomain)) ?? [];
 
-  let content: string | ReadableStream;
+  let content: string | ReadableStream = "";
   if (contentType === "image") {
     //
     content = await generateDirectImage(url.pathname.replace(/^\//, ""), site, {
@@ -44,7 +44,7 @@ export async function generateAsset(
       importedContext,
       url,
     });
-  } else {
+  } else if (contentType !== "media") {
     content = await generateSiteContent(
       url.pathname,
       site,

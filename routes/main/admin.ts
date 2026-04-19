@@ -238,7 +238,7 @@ export default new (class extends BaseHandler {
 
       const site: Site = {
         subdomain,
-        prompt,
+        prompt: prompt || "",
         userId: req.extraInformation?.userId || "",
         versionUuid: crypto.randomUUID(),
       };
@@ -251,7 +251,7 @@ export default new (class extends BaseHandler {
       // Process any @url directives in the prompt
       const urlRegex = /@url\s+(\S+)/g;
       let match;
-      while ((match = urlRegex.exec(prompt)) !== null) {
+      while (prompt && (match = urlRegex.exec(prompt)) !== null) {
         const url = match[1];
         try {
           // Validate URL

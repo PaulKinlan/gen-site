@@ -7,10 +7,15 @@ export class GroqProvider implements LLMProvider {
     this.apiKey = Deno.env.get("GROQ_API_KEY") || "";
   }
 
-  async generate(prompt: LLMInput): Promise<string> {
-    const messages = prompt.system.map((p) => {
-      return { role: "user", content: p };
-    });
+  async generate(prompt: LLMInput): Promise<ReadableStream> {
+    const messages: { role: string; content: string }[] = prompt.system.map(
+      (p) => {
+        return { role: "system", content: p };
+      }
+    );
+
+    messages.push({ role: "user", content: prompt.prompt });
+
     const response = await fetch("https://api.groq.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -18,7 +23,7 @@ export class GroqProvider implements LLMProvider {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: "mixtral-8x7b-32768",
+        model: "llama-3.3-70b-versatile",
         messages,
         temperature: 0.7,
         max_tokens: 4096,
@@ -26,6 +31,12 @@ export class GroqProvider implements LLMProvider {
     });
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const text: string = data.choices[0].message.content;
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(text);
+        controller.close();
+      },
+    });
   }
 }

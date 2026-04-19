@@ -73,7 +73,7 @@ const HTML = `<!DOCTYPE html>
 </html>`;
 
 export default new (class extends BaseHandler {
-  async get(req: Request): Promise<Response> {
+  override async get(req: Request): Promise<Response> {
     console.log("Request for /");
     return new Response(HTML, {
       headers: {

@@ -3,19 +3,18 @@ import { db } from "../../core/db.ts";
 
 export function authenticated(options: { redirect: string }) {
   return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
+    target: (req: Request) => Promise<Response>,
+    _context: ClassMethodDecoratorContext
   ) {
-    const originalDef = descriptor.value;
-
-    descriptor.value = async function (...args: any[]) {
+    async function authenticatedMethod(
+      this: unknown,
+      ...args: [Request]
+    ): Promise<Response> {
       const [req] = args;
       const { auth, session } = getCookies(req.headers);
       const redirectUrl = new URL(req.url);
       redirectUrl.pathname = options.redirect;
 
-      // If there is no auth token
       if (!auth) {
         console.log("No auth");
         return Response.redirect(redirectUrl);
@@ -38,7 +37,9 @@ export function authenticated(options: { redirect: string }) {
         session,
       };
 
-      return originalDef.apply(this, args);
-    };
+      return target.call(this, ...args);
+    }
+
+    return authenticatedMethod;
   };
 }
